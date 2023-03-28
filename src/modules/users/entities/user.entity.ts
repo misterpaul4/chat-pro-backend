@@ -1,4 +1,10 @@
-import { IsEmail, IsOptional, IsString, Length } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
 import { Column, Entity } from 'typeorm';
 
@@ -9,7 +15,10 @@ export class User extends BaseEntity {
   email: string;
 
   @IsString()
-  @Length(8)
+  @MinLength(8)
+  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
+    message: 'password is weak',
+  })
   @Column()
   password: string;
 

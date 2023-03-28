@@ -8,7 +8,7 @@ export class AuthService {
   constructor(private userService: UsersService) {}
 
   async createUser(values: CreateUserDto) {
-    return { values, action: 'sign up' };
+    return this.userService.createOne(undefined, values);
   }
 
   async login(values: LoginDto) {

@@ -13,7 +13,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
   ...generalCrudOptions,
   dto: { create: CreateUserDto, update: UpdateUserDto },
   routes: {
-    only: ['updateOneBase', 'deleteOneBase', 'getOneBase'],
+    only: ['updateOneBase', 'deleteOneBase', 'getOneBase', 'getManyBase'],
   },
   query: {
     join: {

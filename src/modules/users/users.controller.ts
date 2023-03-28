@@ -1,4 +1,4 @@
-import { Controller, UseFilters } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Crud, CrudController } from '@nestjsx/crud';
 import { User } from './entities/user.entity';
@@ -12,6 +12,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
   },
   ...generalCrudOptions,
   dto: { create: CreateUserDto, update: UpdateUserDto },
+  routes: {
+    only: ['updateOneBase', 'deleteOneBase', 'getOneBase'],
+  },
   query: {
     join: {
       tasks: {

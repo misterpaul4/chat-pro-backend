@@ -1,34 +1,30 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, UseFilters } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { Crud, CrudController } from '@nestjsx/crud';
+import { User } from './entities/user.entity';
+import { generalCrudOptions } from 'src/utils/crud';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
+@Crud({
+  model: {
+    type: User,
+  },
+  ...generalCrudOptions,
+  dto: { create: CreateUserDto, update: UpdateUserDto },
+  query: {
+    join: {
+      tasks: {
+        eager: false,
+      },
+      tags: {
+        eager: false,
+      },
+    },
+    exclude: ['password'],
+  },
+})
 @Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
-
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
-  }
+export class UsersController implements CrudController<User> {
+  constructor(public service: UsersService) {}
 }

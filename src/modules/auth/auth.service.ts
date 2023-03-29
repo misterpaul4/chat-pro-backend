@@ -7,10 +7,14 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login-auth.dto';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private userService: UsersService) {}
+  constructor(
+    private userService: UsersService,
+    private jwtService: JwtService,
+  ) {}
 
   async createUser(values: CreateUserDto) {
     const salt = await bcrypt.genSalt();
@@ -27,18 +31,26 @@ export class AuthService {
     });
 
     if (user) {
-      const validePassword = await bcrypt.compare(
+      const validPassword = await bcrypt.compare(
         values.password,
         user.password,
       );
 
-      if (validePassword) {
-        return 'logged in';
+      // valid user
+      if (validPassword) {
+        const token = await this.applyJWT({
+          email: user.email,
+        });
+        return { token };
       }
 
       throw new UnauthorizedException('Incorrect email or password');
     }
 
     throw new NotFoundException('Unauthorized');
+  }
+
+  private applyJWT(payload: { email: string }) {
+    return this.jwtService.sign(payload);
   }
 }

@@ -10,7 +10,9 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { HttpExceptionFilter } from 'src/lib/http-exception.filter';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { User } from '../users/entities/user.entity';
 import { AuthService } from './auth.service';
+import { CurrentUser } from './current-user-decorator';
 import { LoginDto } from './dto/login-auth.dto';
 
 @Controller('auth')
@@ -30,9 +32,9 @@ export class AuthController {
 
   @Get('get-self')
   @UseGuards(AuthGuard())
-  getSelf(@Req() req) {
+  getSelf(@CurrentUser() user: User) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...rest } = req.user;
+    const { password, ...rest } = user;
     return rest;
   }
 }

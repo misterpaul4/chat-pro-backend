@@ -6,7 +6,8 @@ import {
   MinLength,
 } from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
-import { Column, Entity } from 'typeorm';
+import { Request } from 'src/modules/requests/entities/request.entity';
+import { Column, Entity, OneToMany } from 'typeorm';
 
 @Entity()
 export class User extends BaseEntity {
@@ -34,4 +35,10 @@ export class User extends BaseEntity {
   @IsString()
   @IsOptional()
   middleName: string;
+
+  @OneToMany(() => Request, (requests) => requests.sender)
+  sentRequests: Request[];
+
+  @OneToMany(() => Request, (requests) => requests.receiver)
+  receivedRequests: Request[];
 }

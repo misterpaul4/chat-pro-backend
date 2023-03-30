@@ -5,13 +5,17 @@ import { Column, Entity, ManyToOne } from 'typeorm';
 
 @Entity()
 export class Request extends BaseEntity {
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (user) => user.sentRequests, {
+    onDelete: 'CASCADE',
+  })
   sender: User;
 
   @Column()
   senderId: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (user) => user.receivedRequests, {
+    onDelete: 'CASCADE',
+  })
   receiver: User;
 
   @IsString()

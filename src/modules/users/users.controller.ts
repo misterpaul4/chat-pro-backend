@@ -23,6 +23,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
       tags: {
         eager: false,
       },
+      blocklist: {
+        eager: false,
+      },
     },
     exclude: ['password'],
   },

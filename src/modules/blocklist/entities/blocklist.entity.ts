@@ -8,6 +8,9 @@ export class Blocklist extends BaseEntity {
   @ManyToOne(() => User, (user) => user.blockList, { onDelete: 'CASCADE' })
   user: User;
 
+  @Column({ nullable: false })
+  userId: string;
+
   @IsString()
   @IsOptional()
   @Column({ nullable: true })

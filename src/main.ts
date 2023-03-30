@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { middleware } from 'express-ctx';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -10,6 +11,7 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
+  app.use(middleware);
   await app.listen(9287);
 }
 bootstrap();

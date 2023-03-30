@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { setValue } from 'express-ctx';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JWT_SECRET } from 'src/settings';
 import { UsersService } from '../users/users.service';
@@ -31,6 +32,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException();
     }
+
+    setValue('user', user);
 
     return user;
   }

@@ -6,9 +6,8 @@ import {
   MinLength,
 } from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
-import { Blocklist } from 'src/modules/blocklist/entities/blocklist.entity';
 import { Request } from 'src/modules/requests/entities/request.entity';
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
 
 @Entity()
 export class User extends BaseEntity {
@@ -43,6 +42,11 @@ export class User extends BaseEntity {
   @OneToMany(() => Request, (requests) => requests.receiver)
   receivedRequests: Request[];
 
-  @OneToMany(() => Blocklist, (blocklist) => blocklist.user)
-  blockList: Blocklist[];
+  @ManyToMany(() => User, (user) => user.blockedUsers)
+  @JoinTable({
+    name: 'users_blocked_list',
+    joinColumn: { name: 'userId' },
+    inverseJoinColumn: { name: 'blocked_userId' },
+  })
+  blockedUsers: User[];
 }

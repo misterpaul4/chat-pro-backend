@@ -32,8 +32,6 @@ export class AuthController {
   @Get('get-self')
   @UseGuards(AuthGuard())
   getSelf(@CurrentUser() user: User) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...rest } = user;
-    return rest;
+    return user;
   }
 }

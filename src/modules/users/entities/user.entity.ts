@@ -6,6 +6,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
+import { Blocklist } from 'src/modules/blocklist/entities/blocklist.entity';
 import { Request } from 'src/modules/requests/entities/request.entity';
 import { Column, Entity, OneToMany } from 'typeorm';
 
@@ -41,4 +42,7 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Request, (requests) => requests.receiver)
   receivedRequests: Request[];
+
+  @OneToMany(() => Blocklist, (blocklist) => blocklist.user)
+  blockList: Blocklist[];
 }

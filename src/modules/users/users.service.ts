@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
@@ -46,5 +46,20 @@ export class UsersService extends TypeOrmCrudService<User> {
       .where('userId = :currentUser', { currentUser })
       .andWhere('blocked_userId IN (:...unBlockList)', { unBlockList })
       .execute();
+  }
+
+  async sendRequest(currentUser: string, receiverId: string) {
+    try {
+      await this.userRepo
+        .createQueryBuilder()
+        .insert()
+        .into('users_chat_requests')
+        .values([{ senderId: currentUser, receiverId: receiverId }])
+        .execute();
+    } catch (error) {
+      throw new BadRequestException({ message: 'Request unsuccessful' });
+    }
+
+    return { message: 'Your request was sent successfully' };
   }
 }

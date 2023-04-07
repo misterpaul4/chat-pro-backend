@@ -25,12 +25,26 @@ export class UsersService extends TypeOrmCrudService<User> {
       userId: currentUser,
       blocked_userId,
     }));
+
+    // prevent users from blocking themselves
+    const _blockList = values.filter((v) => v.blocked_userId !== currentUser);
+
     return this.userRepo
       .createQueryBuilder()
       .insert()
       .into('users_blocked_list')
-      .values(values)
+      .values(_blockList)
       .orIgnore()
+      .execute();
+  }
+
+  unblock(currentUser: string, unBlockList: BlockUserDto['userIds']) {
+    return this.userRepo
+      .createQueryBuilder()
+      .delete()
+      .from('users_blocked_list')
+      .where('userId = :currentUser', { currentUser })
+      .andWhere('blocked_userId IN (:...unBlockList)', { unBlockList })
       .execute();
   }
 }

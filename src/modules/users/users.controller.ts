@@ -45,7 +45,7 @@ export class UsersController implements CrudController<User> {
   }
 
   @Post('block/remove')
-  unBlock() {
-    return '';
+  unBlock(@CurrentUser() user: User, @Body() dto: BlockUserDto) {
+    return this.service.unblock(user.id, dto.userIds);
   }
 }

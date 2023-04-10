@@ -3,8 +3,6 @@ import {
   Controller,
   Param,
   Post,
-  Query,
-  UseFilters,
   UseGuards,
   UsePipes,
 } from '@nestjs/common';
@@ -17,33 +15,31 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../auth/current-user-decorator';
 import { BlockUserDto } from './dto/user-operations.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { HttpExceptionFilter } from 'src/lib/http-exception.filter';
 import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
 
-// @Crud({
-//   model: {
-//     type: User,
-//   },
-//   ...generalCrudOptions,
-//   dto: { create: CreateUserDto, update: UpdateUserDto },
-//   routes: {
-//     only: ['updateOneBase', 'deleteOneBase', 'getOneBase', 'getManyBase'],
-//   },
-//   query: {
-//     join: {
-//       tasks: {
-//         eager: false,
-//       },
-//       tags: {
-//         eager: false,
-//       },
-//       blocklist: {
-//         eager: false,
-//       },
-//     },
-//     exclude: ['password'],
-//   },
-// })
+@Crud({
+  model: {
+    type: User,
+  },
+  ...generalCrudOptions,
+  dto: { create: CreateUserDto, update: UpdateUserDto },
+  routes: {
+    only: ['getOneBase'],
+  },
+  query: {
+    join: {
+      blockedUsers: {
+        eager: false,
+        exclude: ['password'],
+      },
+      chatRequests: {
+        eager: false,
+        exclude: ['password'],
+      },
+    },
+    exclude: ['password'],
+  },
+})
 @Controller('users')
 @UseGuards(AuthGuard())
 export class UsersController implements CrudController<User> {

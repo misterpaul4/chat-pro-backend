@@ -9,6 +9,7 @@ import { BaseEntity } from 'src/lib/base.entity';
 import { Column, Entity, OneToMany } from 'typeorm';
 import { UserChatRequests } from './user-chat-requests';
 import { UserBlockList } from './user-blocklist';
+import { UserContactList } from './user-contactlist';
 
 @Entity()
 export class User extends BaseEntity {
@@ -48,4 +49,7 @@ export class User extends BaseEntity {
     (receivedRequest) => receivedRequest.receiver,
   )
   receivedRequest: User[];
+
+  @OneToMany(() => UserContactList, (contacts) => contacts.user)
+  contacts: UserContactList[];
 }

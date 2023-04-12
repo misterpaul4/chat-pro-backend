@@ -6,12 +6,18 @@ import { User } from './entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { UserChatRequests } from './entities/user-chat-requests';
 import { UserBlockList } from './entities/user-blocklist';
+import { UserContactList } from './entities/user-contactlist';
 
 @Module({
   controllers: [UsersController],
   providers: [UsersService],
   imports: [
-    TypeOrmModule.forFeature([User, UserChatRequests, UserBlockList]),
+    TypeOrmModule.forFeature([
+      User,
+      UserChatRequests,
+      UserBlockList,
+      UserContactList,
+    ]),
     forwardRef(() => AuthModule),
   ],
   exports: [UsersService],

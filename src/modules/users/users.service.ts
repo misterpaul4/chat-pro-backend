@@ -91,6 +91,18 @@ export class UsersService extends TypeOrmCrudService<User> {
       senderId: currentUser,
     });
 
+    const pendingRequestErrorMessage =
+      'You already have a request with this user';
+
+    // check if pending requests from receiver
+    const hasPendingRequest = await this.userChatRequestsRepo.findOne({
+      where: { senderId: payload.receiverId, receiverId: currentUser },
+    });
+
+    if (hasPendingRequest) {
+      throw new BadRequestException(pendingRequestErrorMessage);
+    }
+
     try {
       const response = await this.userChatRequestsRepo.save(instance);
       return response;
@@ -101,9 +113,7 @@ export class UsersService extends TypeOrmCrudService<User> {
         message,
         payload: instance,
       });
-      throw new BadRequestException(
-        'You already have a pending request with this user',
-      );
+      throw new BadRequestException(pendingRequestErrorMessage);
     }
   }
 

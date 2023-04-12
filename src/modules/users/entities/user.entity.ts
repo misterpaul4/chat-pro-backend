@@ -6,7 +6,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
-import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 import { UserChatRequests } from './user-chat-requests';
 import { UserBlockList } from './user-blocklist';
 

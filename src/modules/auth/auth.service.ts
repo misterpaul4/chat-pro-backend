@@ -42,7 +42,8 @@ export class AuthService {
         const token = await this.issueToken({
           email: user.email,
         });
-        return { token };
+        const { id, firstName, lastName, middleName, email } = user;
+        return { token, user: { id, firstName, lastName, middleName, email } };
       }
 
       throw new UnauthorizedException('Incorrect email or password');

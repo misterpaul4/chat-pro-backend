@@ -6,7 +6,9 @@ import {
   MinLength,
 } from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
-import { Column, Entity, JoinTable, ManyToMany } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
+import { UserChatRequests } from './user-chat-requests';
+import { UserBlockList } from './user-blocklist';
 
 @Entity()
 export class User extends BaseEntity {
@@ -35,19 +37,15 @@ export class User extends BaseEntity {
   @IsOptional()
   middleName: string;
 
-  @ManyToMany(() => User, (user) => user.blockedUsers)
-  @JoinTable({
-    name: 'users_blocked_list',
-    joinColumn: { name: 'userId' },
-    inverseJoinColumn: { name: 'blocked_userId' },
-  })
-  blockedUsers: User[];
+  @OneToMany(() => UserBlockList, (blockedUsers) => blockedUsers.user)
+  blockedUsers: UserBlockList[];
 
-  @ManyToMany(() => User, (user) => user.chatRequests)
-  @JoinTable({
-    name: 'users_chat_requests',
-    joinColumn: { name: 'senderId' },
-    inverseJoinColumn: { name: 'receiverId' },
-  })
-  chatRequests: User[];
+  @OneToMany(() => UserChatRequests, (sentRequest) => sentRequest.sender)
+  sentRequest: User[];
+
+  @OneToMany(
+    () => UserChatRequests,
+    (receivedRequest) => receivedRequest.receiver,
+  )
+  receivedRequest: User[];
 }

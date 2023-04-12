@@ -7,9 +7,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
-import { DeepPartial, Repository, DataSource } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 import { BlockUserDto } from './dto/user-operations.dto';
 import { User } from './entities/user.entity';
+import { UserChatRequests } from './entities/user-chat-requests';
+import { UserBlockList } from './entities/user-blocklist';
 
 @Injectable()
 export class UsersService extends TypeOrmCrudService<User> {
@@ -17,7 +19,10 @@ export class UsersService extends TypeOrmCrudService<User> {
 
   constructor(
     @InjectRepository(User) private userRepo: Repository<User>,
-    private readonly datasource: DataSource,
+    @InjectRepository(UserChatRequests)
+    private userChatRequestsRepo: Repository<UserChatRequests>,
+    @InjectRepository(UserBlockList)
+    private userBlockListRepo: Repository<UserBlockList>,
   ) {
     super(userRepo);
   }
@@ -30,69 +35,97 @@ export class UsersService extends TypeOrmCrudService<User> {
     return this.userRepo.save(user);
   }
 
-  block(currentUser: string, blockList: BlockUserDto['userIds']) {
-    const values = blockList.map((blocked_userId) => ({
+  async block(currentUser: string, blockList: BlockUserDto['userIds']) {
+    // prevent users from blocking themselves
+    const list = blockList.filter((userId) => userId !== currentUser);
+
+    const values = list.map((blockedUserId) => ({
       userId: currentUser,
-      blocked_userId,
+      blockedUserId,
     }));
 
-    // prevent users from blocking themselves
-    const _blockList = values.filter((v) => v.blocked_userId !== currentUser);
-
-    return this.userRepo
+    const response = await this.userRepo
       .createQueryBuilder()
       .insert()
-      .into('users_blocked_list')
-      .values(_blockList)
+      .into(UserBlockList)
+      .values(values)
       .orIgnore()
       .execute();
+
+    const totalBlocked = response.raw.length;
+
+    return {
+      message: `${totalBlocked} ${
+        totalBlocked === 1 ? 'user' : 'users'
+      } blocked`,
+    };
   }
 
-  unblock(currentUser: string, unBlockList: BlockUserDto['userIds']) {
-    return this.userRepo
+  async unblock(currentUser: string, unBlockList: BlockUserDto['userIds']) {
+    const response = await this.userRepo
       .createQueryBuilder()
       .delete()
-      .from('users_blocked_list')
+      .from(UserBlockList)
       .where('userId = :currentUser', { currentUser })
-      .andWhere('blocked_userId IN (:...unBlockList)', { unBlockList })
+      .andWhere('blockedUserId IN (:...unBlockList)', { unBlockList })
       .execute();
+
+    const totalUnBlocked = response.raw.length;
+
+    return {
+      message: `${totalUnBlocked} ${
+        totalUnBlocked === 1 ? 'user' : 'users'
+      } unblocked`,
+    };
   }
 
-  async sendRequest(currentUser: string, receiverId: string) {
+  async sendRequest(currentUser: string, payload: UserChatRequests) {
     // check block list
-    const blocked = await this.checkBlockList(currentUser, receiverId);
+    const userIsBlocked = await this.checkBlockList(
+      currentUser,
+      payload.receiverId,
+    );
 
-    if (blocked) {
-      this.logger.warn({
-        error: 'request error, user in blockedlist',
-        data: { currentUser, receiverId },
-      });
-      throw new ForbiddenException('You cannot send request to this user');
+    if (userIsBlocked) {
+      throw new BadRequestException('This user is blocked');
     }
 
-    try {
-      // send request
-      await this.userRepo
-        .createQueryBuilder()
-        .insert()
-        .into('users_chat_requests')
-        .values([{ senderId: currentUser, receiverId: receiverId }])
-        .execute();
-    } catch (error) {
-      this.logger.error('error sending request');
-      throw new BadRequestException({ message: 'Request unsuccessful' });
-    }
-
-    return { message: 'Your request was sent successfully' };
-  }
-
-  private async checkBlockList(userId: string, blocked_userId: string) {
-    const user = await this.userRepo.findOne({
-      where: { id: userId },
-      relations: ['blockedUsers'],
-      select: ['id'],
+    // save request
+    const instance = this.userChatRequestsRepo.create({
+      ...payload,
+      senderId: currentUser,
     });
 
-    return user.blockedUsers.find((u) => u.id === blocked_userId);
+    try {
+      const response = await this.userChatRequestsRepo.save(instance);
+      return response;
+    } catch (error) {
+      const message = 'error sending message request';
+      this.logger.error({
+        error,
+        message,
+        payload: instance,
+      });
+      throw new BadRequestException(
+        'You already have a pending request with this user',
+      );
+    }
+  }
+
+  async getRequests(currentUser: string) {
+    return this.userChatRequestsRepo.find({
+      where: { receiverId: currentUser },
+    });
+  }
+
+  async getSentRequests(currentUser: string) {
+    return this.userChatRequestsRepo.find({ where: { senderId: currentUser } });
+  }
+
+  private checkBlockList(userId: string, blockedUserId: string) {
+    return this.userBlockListRepo.findOne({
+      where: { blockedUserId, userId },
+      select: ['id'],
+    });
   }
 }

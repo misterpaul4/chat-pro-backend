@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Param,
   Post,
   UseGuards,
@@ -15,7 +16,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../auth/current-user-decorator';
 import { BlockUserDto } from './dto/user-operations.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
+import { UserChatRequests } from './entities/user-chat-requests';
 
 @Crud({
   model: {
@@ -32,7 +33,11 @@ import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
         eager: false,
         exclude: ['password'],
       },
-      chatRequests: {
+      receivedRequest: {
+        eager: false,
+        exclude: ['password'],
+      },
+      sentRequest: {
         eager: false,
         exclude: ['password'],
       },
@@ -55,12 +60,18 @@ export class UsersController implements CrudController<User> {
     return this.service.unblock(user.id, dto.userIds);
   }
 
-  @Post('send-request/:receiverId')
-  @UsePipes(new UuidValidationPipe())
-  sendRequest(
-    @CurrentUser() user: User,
-    @Param('receiverId') receiverId: string,
-  ) {
-    return this.service.sendRequest(user.id, receiverId);
+  @Post('chat-requests/send')
+  sendRequest(@CurrentUser() user: User, @Body() payload: UserChatRequests) {
+    return this.service.sendRequest(user.id, payload);
+  }
+
+  @Get('chat-requests/received')
+  getChatRequest(@CurrentUser() user: User) {
+    return this.service.getRequests(user.id);
+  }
+
+  @Get('chat-requests/sent')
+  getSentChatRequest(@CurrentUser() user: User) {
+    return this.service.getSentRequests(user.id);
   }
 }

@@ -9,3 +9,8 @@ export class IdDto {
   @IsUUID('4')
   id: string;
 }
+
+export enum StatusEnum {
+  Pending = 'Pending',
+  Approved = 'Approved',
+}

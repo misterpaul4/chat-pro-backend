@@ -1,9 +1,14 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { DeepPartial, Repository } from 'typeorm';
-import { BlockUserDto } from './dto/user-operations.dto';
+import { BlockUserDto, StatusEnum } from './dto/user-operations.dto';
 import { User } from './entities/user.entity';
 import { UserChatRequests } from './entities/user-chat-requests';
 import { UserBlockList } from './entities/user-blocklist';
@@ -125,6 +130,23 @@ export class UsersService extends TypeOrmCrudService<User> {
 
   async getSentRequests(currentUser: string) {
     return this.userChatRequestsRepo.find({ where: { senderId: currentUser } });
+  }
+
+  async approveRequest(currentUser: string, id: string) {
+    // check if request can be approved by user
+    const request = this.userChatRequestsRepo.findOne({
+      where: { id, receiverId: currentUser },
+    });
+
+    if (!request) {
+      throw new UnauthorizedException(
+        'You are not authorized to perform this action',
+      );
+    }
+
+    return this.userChatRequestsRepo.update(id, {
+      status: StatusEnum.Approved,
+    });
   }
 
   private checkBlockList(userId: string, blockedUserId: string) {

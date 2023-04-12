@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { Crud, CrudController } from '@nestjsx/crud';
 import { User } from './entities/user.entity';
@@ -9,6 +17,7 @@ import { CurrentUser } from '../auth/current-user-decorator';
 import { BlockUserDto } from './dto/user-operations.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { UserChatRequests } from './entities/user-chat-requests';
+import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
 
 @Crud({
   model: {
@@ -55,6 +64,12 @@ export class UsersController implements CrudController<User> {
   @Post('chat-requests/send')
   sendRequest(@CurrentUser() user: User, @Body() payload: UserChatRequests) {
     return this.service.sendRequest(user.id, payload);
+  }
+
+  @Post('chat-requests/approve/:id')
+  @UsePipes(new UuidValidationPipe())
+  approveRequest(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.service.approveRequest(user.id, id);
   }
 
   @Get('chat-requests/received')

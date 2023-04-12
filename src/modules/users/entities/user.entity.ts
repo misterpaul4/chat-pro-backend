@@ -10,6 +10,7 @@ import { Column, Entity, OneToMany } from 'typeorm';
 import { UserChatRequests } from './user-chat-requests';
 import { UserBlockList } from './user-blocklist';
 import { UserContactList } from './user-contactlist';
+import { Inbox } from 'src/modules/inbox/entities/inbox.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -52,4 +53,10 @@ export class User extends BaseEntity {
 
   @OneToMany(() => UserContactList, (contacts) => contacts.user)
   contacts: UserContactList[];
+
+  @OneToMany(() => Inbox, (sentMessages) => sentMessages.sender)
+  sentMessages: Inbox[];
+
+  @OneToMany(() => Inbox, (receivedMessages) => receivedMessages.receiver)
+  receivedMessages: Inbox[];
 }

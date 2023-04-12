@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -56,7 +57,7 @@ export class UsersController implements CrudController<User> {
     return this.service.block(user.id, dto.userIds);
   }
 
-  @Post('block/remove')
+  @Delete('block/remove')
   unBlock(@CurrentUser() user: User, @Body() dto: BlockUserDto) {
     return this.service.unblock(user.id, dto.userIds);
   }
@@ -80,5 +81,22 @@ export class UsersController implements CrudController<User> {
   @Get('chat-requests/sent')
   getSentChatRequest(@CurrentUser() user: User) {
     return this.service.getSentRequests(user.id);
+  }
+
+  @Get('contacts')
+  getContacts(@CurrentUser() user: User) {
+    return this.service.getContacts(user.id);
+  }
+
+  @Post('contacts/add/:contactId')
+  @UsePipes(new UuidValidationPipe())
+  addContact(@CurrentUser() user: User, @Param('contactId') contactId: string) {
+    return this.service.addToContact(user.id, contactId);
+  }
+
+  @Delete('contacts/remove/:id')
+  @UsePipes(new UuidValidationPipe())
+  removeContact(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.service.removeContact(user.id, id);
   }
 }

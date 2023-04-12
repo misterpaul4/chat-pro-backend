@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +13,7 @@ import { BlockUserDto, StatusEnum } from './dto/user-operations.dto';
 import { User } from './entities/user.entity';
 import { UserChatRequests } from './entities/user-chat-requests';
 import { UserBlockList } from './entities/user-blocklist';
+import { UserContactList } from './entities/user-contactlist';
 
 @Injectable()
 export class UsersService extends TypeOrmCrudService<User> {
@@ -23,6 +25,8 @@ export class UsersService extends TypeOrmCrudService<User> {
     private userChatRequestsRepo: Repository<UserChatRequests>,
     @InjectRepository(UserBlockList)
     private userBlockListRepo: Repository<UserBlockList>,
+    @InjectRepository(UserContactList)
+    private userContactListRepo: Repository<UserContactList>,
   ) {
     super(userRepo);
   }
@@ -134,7 +138,7 @@ export class UsersService extends TypeOrmCrudService<User> {
 
   async approveRequest(currentUser: string, id: string) {
     // check if request can be approved by user
-    const request = this.userChatRequestsRepo.findOne({
+    const request = await this.userChatRequestsRepo.findOne({
       where: { id, receiverId: currentUser },
     });
 
@@ -147,6 +151,39 @@ export class UsersService extends TypeOrmCrudService<User> {
     return this.userChatRequestsRepo.update(id, {
       status: StatusEnum.Approved,
     });
+  }
+
+  getContacts(currentUser: string) {
+    return this.userContactListRepo.find({ where: { userId: currentUser } });
+  }
+
+  async addToContact(currentUser: string, contactId: string) {
+    const contact = this.userContactListRepo.create({
+      contactId,
+      userId: currentUser,
+    });
+
+    try {
+      const result = await this.userContactListRepo.save(contact);
+      return result;
+    } catch (error) {
+      this.logger.error({ message: 'Error saving contact', error });
+      throw new BadRequestException('User already in contact list');
+    }
+  }
+
+  async removeContact(currentUser: string, id: string) {
+    // check if user can delete contact
+    const contact = await this.userContactListRepo.findOne({
+      where: { id, userId: currentUser },
+      select: ['id'],
+    });
+
+    if (!contact) {
+      throw new NotFoundException();
+    }
+
+    return this.userContactListRepo.delete(id);
   }
 
   private checkBlockList(userId: string, blockedUserId: string) {

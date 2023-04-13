@@ -1,3 +1,4 @@
+import { IsBoolean, IsOptional, IsString, IsUUID } from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 import { Column, Entity, ManyToOne } from 'typeorm';
@@ -5,9 +6,12 @@ import { Column, Entity, ManyToOne } from 'typeorm';
 @Entity()
 export class Inbox extends BaseEntity {
   @Column()
+  @IsString()
   message: string;
 
-  @Column({ type: 'boolean' })
+  @Column({ type: 'boolean', default: false })
+  @IsBoolean()
+  @IsOptional()
   starred: boolean;
 
   @ManyToOne(() => User)
@@ -19,6 +23,12 @@ export class Inbox extends BaseEntity {
   @ManyToOne(() => User)
   receiver: User;
 
+  @IsUUID('4')
   @Column()
   receiverId: string;
+
+  @IsString()
+  @IsOptional()
+  @Column({ nullable: true })
+  replyingTo?: string;
 }

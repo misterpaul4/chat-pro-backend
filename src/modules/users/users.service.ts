@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
-import { DeepPartial, Repository } from 'typeorm';
+import { DeepPartial, In, Repository } from 'typeorm';
 import { BlockUserDto, StatusEnum } from './dto/user-operations.dto';
 import { User } from './entities/user.entity';
 import { UserChatRequests } from './entities/user-chat-requests';
@@ -39,48 +39,50 @@ export class UsersService extends TypeOrmCrudService<User> {
     return this.userRepo.save(user);
   }
 
-  async block(currentUser: string, blockList: BlockUserDto['userIds']) {
+  async block(currentUser: string, blockList: string[]) {
     // prevent users from blocking themselves
-    const list = blockList.filter((userId) => userId !== currentUser);
+    // const list = blockList.filter((userId) => userId !== currentUser);
 
-    const values = list.map((blockedUserId) => ({
-      userId: currentUser,
-      blockedUserId,
-    }));
+    // const values = list.map((blockedUserId) => ({
+    //   userId: currentUser,
+    //   blockedUserId,
+    // }));
 
-    const response = await this.userRepo
-      .createQueryBuilder()
-      .insert()
-      .into(UserBlockList)
-      .values(values)
-      .orIgnore()
-      .execute();
+    // const response = await this.userRepo
+    //   .createQueryBuilder()
+    //   .insert()
+    //   .into(UserBlockList)
+    //   .values(values)
+    //   .orIgnore()
+    //   .execute();
 
-    const totalBlocked = response.raw.length;
+    // const totalBlocked = response.raw.length;
 
-    return {
-      message: `${totalBlocked} ${
-        totalBlocked === 1 ? 'user' : 'users'
-      } blocked`,
-    };
+    // return {
+    //   message: `${totalBlocked} ${
+    //     totalBlocked === 1 ? 'user' : 'users'
+    //   } blocked`,
+    // };
+    return this.blockUnblock(currentUser, blockList, 'block');
   }
 
-  async unblock(currentUser: string, unBlockList: BlockUserDto['userIds']) {
-    const response = await this.userRepo
-      .createQueryBuilder()
-      .delete()
-      .from(UserBlockList)
-      .where('userId = :currentUser', { currentUser })
-      .andWhere('blockedUserId IN (:...unBlockList)', { unBlockList })
-      .execute();
+  async unblock(currentUser: string, unBlockList: string[]) {
+    // const response = await this.userRepo
+    //   .createQueryBuilder()
+    //   .delete()
+    //   .from(UserBlockList)
+    //   .where('userId = :currentUser', { currentUser })
+    //   .andWhere('blockedUserId IN (:...unBlockList)', { unBlockList })
+    //   .execute();
 
-    const totalUnBlocked = response.raw.length;
+    // const totalUnBlocked = response.raw.length;
 
-    return {
-      message: `${totalUnBlocked} ${
-        totalUnBlocked === 1 ? 'user' : 'users'
-      } unblocked`,
-    };
+    // return {
+    //   message: `${totalUnBlocked} ${
+    //     totalUnBlocked === 1 ? 'user' : 'users'
+    //   } unblocked`,
+    // };
+    return this.blockUnblock(currentUser, unBlockList, 'unblock');
   }
 
   async sendRequest(currentUser: string, payload: UserChatRequests) {
@@ -157,6 +159,24 @@ export class UsersService extends TypeOrmCrudService<User> {
     return this.userContactListRepo.find({ where: { userId: currentUser } });
   }
 
+  async contactGuard(
+    currentUser: string,
+    contactId: string,
+    errorMessage = 'Error while performing request',
+  ) {
+    try {
+      const contact = await this.userContactListRepo.findOneOrFail({
+        where: { userId: currentUser, contactId, blocked: false },
+        select: ['id'],
+      });
+
+      return contact;
+    } catch (error) {
+      this.logger.error({ errorMessage, error });
+      throw new BadRequestException({ error: errorMessage });
+    }
+  }
+
   async addToContact(currentUser: string, contactId: string) {
     const contact = this.userContactListRepo.create({
       contactId,
@@ -187,9 +207,55 @@ export class UsersService extends TypeOrmCrudService<User> {
   }
 
   private checkBlockList(userId: string, blockedUserId: string) {
-    return this.userBlockListRepo.findOne({
-      where: { blockedUserId, userId },
-      select: ['id'],
+    // return this.userBlockListRepo.findOne({
+    //   where: { blockedUserId, userId },
+    //   select: ['id'],
+    // });
+    return this.userContactListRepo.findOne({
+      where: { userId, contactId: blockedUserId, blocked: true },
     });
+  }
+
+  private async blockUnblock(
+    currentUser: string,
+    _list: string[],
+    type: 'block' | 'unblock',
+  ) {
+    const getContacts = await this.userContactListRepo.find({
+      where: { id: In(_list) },
+    });
+
+    const config =
+      type === 'block'
+        ? { block: true, text: 'blocked' }
+        : { block: false, text: 'unblocked' };
+
+    // make sure user can block or unblock these contacts and also not block themselves
+    const currentUserContacts = getContacts.filter(
+      (contact) =>
+        contact.userId === currentUser &&
+        contact.contactId !== currentUser &&
+        !contact.blocked == config.block,
+    );
+    const list = currentUserContacts.map((contact) => contact.id);
+
+    if (list.length) {
+      const response = await this.userContactListRepo
+        .createQueryBuilder()
+        .update(UserContactList)
+        .set({ blocked: config.block })
+        .whereInIds(list)
+        .execute();
+
+      const totalBlocked = response.affected;
+
+      return {
+        message: `${totalBlocked} ${totalBlocked === 1 ? 'user' : 'users'} ${
+          config.text
+        }`,
+      };
+    }
+
+    return { message: `No user was ${config.text}` };
   }
 }

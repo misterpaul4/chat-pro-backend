@@ -19,4 +19,7 @@ export class UserContactList extends BaseEntity {
 
   @Column({ type: 'boolean', default: false })
   favourite: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  blocked: boolean;
 }

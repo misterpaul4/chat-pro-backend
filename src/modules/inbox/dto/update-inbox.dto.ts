@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateInboxDto } from './create-inbox.dto';
+import { IsBoolean } from 'class-validator';
 
-export class UpdateInboxDto extends PartialType(CreateInboxDto) {}
+export class UpdateInboxDto {
+  @IsBoolean()
+  read?: boolean;
+}

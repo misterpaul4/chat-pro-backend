@@ -31,4 +31,7 @@ export class Inbox extends BaseEntity {
   @IsOptional()
   @Column({ nullable: true })
   replyingTo?: string;
+
+  @Column({ type: 'boolean', default: false })
+  read?: boolean;
 }

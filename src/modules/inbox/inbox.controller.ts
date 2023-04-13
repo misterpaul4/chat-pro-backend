@@ -49,6 +49,10 @@ export class InboxController implements CrudController<Inbox> {
   @Get()
   @UseInterceptors(CrudRequestInterceptor)
   getInbox(@CurrentUser() user: User, @ParsedRequest() req: CrudRequest) {
+    // get only logged in user's messages
+    req.parsed.search.$and.push({
+      $or: [{ receiverId: { $eq: user.id } }, { senderId: { $eq: user.id } }],
+    });
     return this.service.getMany(req);
   }
 

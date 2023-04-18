@@ -31,12 +31,14 @@ export class UsersService extends TypeOrmCrudService<User> {
     super(userRepo);
   }
 
-  createOne(
+  async createOne(
     req: CrudRequest | undefined,
     dto: DeepPartial<User>,
   ): Promise<User> {
     const user = this.userRepo.create(dto);
-    return this.userRepo.save(user);
+    const result = await this.userRepo.save(user);
+
+    return { ...result, password: undefined };
   }
 
   async block(currentUser: string, blockList: string[]) {

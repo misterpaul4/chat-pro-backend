@@ -43,7 +43,10 @@ export class AuthService {
           email: user.email,
         });
         const { id, firstName, lastName, middleName, email } = user;
-        return { token, user: { id, firstName, lastName, middleName, email } };
+        return {
+          token,
+          user: { id, firstName, lastName, middleName, email },
+        };
       }
 
       throw new UnauthorizedException('Incorrect email or password');

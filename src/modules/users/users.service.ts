@@ -158,7 +158,10 @@ export class UsersService extends TypeOrmCrudService<User> {
   }
 
   getContacts(currentUser: string) {
-    return this.userContactListRepo.find({ where: { userId: currentUser } });
+    return this.userContactListRepo.find({
+      where: { userId: currentUser },
+      relations: ['contact'],
+    });
   }
 
   async contactGuard(

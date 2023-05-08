@@ -1,4 +1,4 @@
-import { IsUUID } from 'class-validator';
+import { IsBoolean, IsEmail, IsOptional, IsUUID } from 'class-validator';
 
 export class BlockUserDto {
   @IsUUID('4', { each: true })
@@ -10,7 +10,22 @@ export class IdDto {
   id: string;
 }
 
+export class EmailDto {
+  @IsEmail()
+  email: string;
+}
+
 export enum StatusEnum {
   Pending = 'Pending',
   Approved = 'Approved',
+  Rejected = 'Rejected',
+}
+
+export class AddContactDto {
+  @IsUUID('3')
+  contactId: string;
+
+  @IsOptional()
+  @IsBoolean()
+  blocked?: boolean;
 }

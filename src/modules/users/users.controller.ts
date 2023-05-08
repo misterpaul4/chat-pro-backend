@@ -15,7 +15,11 @@ import { generalCrudOptions } from 'src/utils/crud';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../auth/current-user-decorator';
-import { BlockUserDto } from './dto/user-operations.dto';
+import {
+  AddContactDto,
+  BlockUserDto,
+  EmailDto,
+} from './dto/user-operations.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { UserChatRequests } from './entities/user-chat-requests';
 import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
@@ -73,6 +77,12 @@ export class UsersController implements CrudController<User> {
     return this.service.approveRequest(user.id, id);
   }
 
+  @Post('chat-requests/decline/:id')
+  @UsePipes(new UuidValidationPipe())
+  declineRequest(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.service.declineRequest(user.id, id);
+  }
+
   @Get('chat-requests/received')
   getChatRequest(@CurrentUser() user: User) {
     return this.service.getRequests(user.id);
@@ -88,15 +98,19 @@ export class UsersController implements CrudController<User> {
     return this.service.getContacts(user.id);
   }
 
-  @Post('contacts/add/:contactId')
-  @UsePipes(new UuidValidationPipe())
-  addContact(@CurrentUser() user: User, @Param('contactId') contactId: string) {
-    return this.service.addToContact(user.id, contactId);
+  @Post('contacts/add')
+  addContact(@CurrentUser() user: User, @Body() body: AddContactDto) {
+    return this.service.addToContact(user.id, body.contactId, !!body.blocked);
   }
 
   @Delete('contacts/remove/:id')
   @UsePipes(new UuidValidationPipe())
   removeContact(@CurrentUser() user: User, @Param('id') id: string) {
     return this.service.removeContact(user.id, id);
+  }
+
+  @Post('verify-email')
+  verifyRequest(@Body() body: EmailDto) {
+    return this.service.verifyRequest(body.email);
   }
 }

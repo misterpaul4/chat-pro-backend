@@ -53,7 +53,8 @@ export class InboxController implements CrudController<Inbox> {
     req.parsed.search.$and.push({
       $or: [{ receiverId: { $eq: user.id } }, { senderId: { $eq: user.id } }],
     });
-    return this.service.getMany(req);
+    // return this.service.getMany(req);
+    return this.service.getMyInbox(user.id, req);
   }
 
   @Post()

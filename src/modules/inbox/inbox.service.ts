@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { CreateInboxDto } from './dto/create-inbox.dto';
 import { CrudRequest } from '@nestjsx/crud';
 import { UsersService } from '../users/users.service';
+import { ParsedRequestParams } from '@nestjsx/crud-request';
 
 @Injectable()
 export class InboxService extends TypeOrmCrudService<Inbox> {
@@ -26,5 +27,18 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
     // check contact and if blocked
     await this.userService.contactGuard(currentUser, payload.receiverId);
     return super.createOne(req, { ...payload, senderId: currentUser });
+  }
+
+  getMyInbox(currentUser: string, req: CrudRequest) {
+    return this.inboxRepo
+      .createQueryBuilder('inbox')
+      .where('inbox.senderId = :userId OR inbox.receiverId = :userId', {
+        userId: currentUser,
+      })
+      .groupBy('inbox.senderId')
+      .addGroupBy('inbox.id')
+      .getMany();
+
+    // return super.getMany(req);
   }
 }

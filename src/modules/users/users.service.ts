@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { CrudRequest } from '@nestjsx/crud';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { DeepPartial, In, Repository } from 'typeorm';
-import { BlockUserDto, StatusEnum } from './dto/user-operations.dto';
+import { StatusEnum } from './dto/user-operations.dto';
 import { User } from './entities/user.entity';
 import { UserChatRequests } from './entities/user-chat-requests';
 import { UserBlockList } from './entities/user-blocklist';
@@ -29,6 +29,20 @@ export class UsersService extends TypeOrmCrudService<User> {
     private userContactListRepo: Repository<UserContactList>,
   ) {
     super(userRepo);
+  }
+
+  async verifyRequest(email: string) {
+    // check if user exist
+    const recipient = await this.userRepo.findOne({
+      where: { email },
+      select: ['id', 'firstName', 'email'],
+    });
+
+    if (!recipient) {
+      throw new NotFoundException('User not found');
+    }
+
+    return recipient;
   }
 
   async createOne(
@@ -88,6 +102,11 @@ export class UsersService extends TypeOrmCrudService<User> {
   }
 
   async sendRequest(currentUser: string, payload: UserChatRequests) {
+    // user cannot send request to themselves
+    if (currentUser === payload.receiverId) {
+      throw new BadRequestException('You cannot send a request to yourself');
+    }
+
     // check block list
     const userIsBlocked = await this.checkBlockList(
       currentUser,
@@ -95,7 +114,7 @@ export class UsersService extends TypeOrmCrudService<User> {
     );
 
     if (userIsBlocked) {
-      throw new BadRequestException('This user is blocked');
+      throw new BadRequestException('You cannot send this user a request');
     }
 
     // save request
@@ -118,6 +137,8 @@ export class UsersService extends TypeOrmCrudService<User> {
 
     try {
       const response = await this.userChatRequestsRepo.save(instance);
+      // add to contact
+      await this.addToContact(currentUser, payload.receiverId);
       return response;
     } catch (error) {
       const message = 'error sending message request';
@@ -132,7 +153,8 @@ export class UsersService extends TypeOrmCrudService<User> {
 
   async getRequests(currentUser: string) {
     return this.userChatRequestsRepo.find({
-      where: { receiverId: currentUser },
+      where: { receiverId: currentUser, status: StatusEnum.Pending },
+      relations: ['sender'],
     });
   }
 
@@ -152,9 +174,34 @@ export class UsersService extends TypeOrmCrudService<User> {
       );
     }
 
-    return this.userChatRequestsRepo.update(id, {
+    // update request
+    await this.userChatRequestsRepo.update(id, {
       status: StatusEnum.Approved,
     });
+
+    // add to contact
+    return this.addToContact(currentUser, request.senderId);
+  }
+
+  async declineRequest(currentUser: string, id: string) {
+    // check if request can be declined by user
+    const request = await this.userChatRequestsRepo.findOne({
+      where: { id, receiverId: currentUser },
+    });
+
+    if (!request) {
+      throw new UnauthorizedException(
+        'You are not authorized to perform this action',
+      );
+    }
+
+    // update request
+    await this.userChatRequestsRepo.update(id, {
+      status: StatusEnum.Rejected,
+    });
+
+    // add to contact
+    return this.addToContact(currentUser, request.senderId, true);
   }
 
   getContacts(currentUser: string) {
@@ -182,10 +229,11 @@ export class UsersService extends TypeOrmCrudService<User> {
     }
   }
 
-  async addToContact(currentUser: string, contactId: string) {
+  async addToContact(currentUser: string, contactId: string, blocked = false) {
     const contact = this.userContactListRepo.create({
       contactId,
       userId: currentUser,
+      blocked,
     });
 
     try {
@@ -193,7 +241,7 @@ export class UsersService extends TypeOrmCrudService<User> {
       return result;
     } catch (error) {
       this.logger.error({ message: 'Error saving contact', error });
-      throw new BadRequestException('User already in contact list');
+      throw new BadRequestException('Failed to perform action');
     }
   }
 
@@ -227,7 +275,7 @@ export class UsersService extends TypeOrmCrudService<User> {
     type: 'block' | 'unblock',
   ) {
     const getContacts = await this.userContactListRepo.find({
-      where: { id: In(_list) },
+      where: { id: In(_list), userId: currentUser },
     });
 
     const config =
@@ -238,9 +286,7 @@ export class UsersService extends TypeOrmCrudService<User> {
     // make sure user can block or unblock these contacts and also not block themselves
     const currentUserContacts = getContacts.filter(
       (contact) =>
-        contact.userId === currentUser &&
-        contact.contactId !== currentUser &&
-        !contact.blocked == config.block,
+        contact.contactId !== currentUser && !contact.blocked == config.block,
     );
     const list = currentUserContacts.map((contact) => contact.id);
 

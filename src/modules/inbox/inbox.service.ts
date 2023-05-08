@@ -28,15 +28,15 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
     return super.createOne(req, { ...payload, senderId: currentUser });
   }
 
-  getMyInbox(currentUser: string) {
+  getShallowInbox(currentUser: string) {
     return (
       this.inboxRepo
         .createQueryBuilder('inbox')
-        .distinctOn(['inbox.senderId', 'inbox.receiverId'])
+        // .distinctOn(['inbox.senderId', 'inbox.receiverId'])
         .where('inbox.senderId = :userId OR inbox.receiverId = :userId', {
           userId: currentUser,
         })
-        // .orderBy('inbox.createdAt')
+        .orderBy('inbox.createdAt', 'DESC')
         .getMany()
     );
 

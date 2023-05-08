@@ -113,4 +113,9 @@ export class UsersController implements CrudController<User> {
   verifyRequest(@Body() body: EmailDto) {
     return this.service.verifyRequest(body.email);
   }
+
+  @Get('contacts-inbox')
+  getContactInbox(@CurrentUser() user: User) {
+    return this.service.getContactInbox(user.id);
+  }
 }

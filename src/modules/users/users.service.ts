@@ -211,6 +211,20 @@ export class UsersService extends TypeOrmCrudService<User> {
     });
   }
 
+  async getContactInbox(currentUser: string) {
+    return this.userContactListRepo
+      .createQueryBuilder('ct')
+      .innerJoinAndSelect('ct.contact', 'contact')
+      .innerJoinAndSelect('contact.sentMessages', 'sentMessages')
+      .innerJoinAndSelect('contact.receivedMessages', 'receivedMessages')
+      .where('ct.userId = :currentUser', { currentUser })
+      .andWhere('receivedMessages.senderId = :currentUser', { currentUser })
+      .andWhere('sentMessages.receiverId = :currentUser', { currentUser })
+      .orderBy('sentMessages.createdAt', 'DESC')
+      .addOrderBy('receivedMessages.createdAt', 'DESC')
+      .getMany();
+  }
+
   async contactGuard(
     currentUser: string,
     contactId: string,

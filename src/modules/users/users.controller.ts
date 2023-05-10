@@ -38,23 +38,10 @@ import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
   ...generalCrudOptions,
   dto: { create: CreateUserDto, update: UpdateUserDto },
   routes: {
-    only: ['getOneBase'],
+    only: ['getOneBase', 'getManyBase'],
   },
   query: {
-    join: {
-      blockedUsers: {
-        eager: false,
-        exclude: ['password'],
-      },
-      receivedRequest: {
-        eager: false,
-        exclude: ['password'],
-      },
-      sentRequest: {
-        eager: false,
-        exclude: ['password'],
-      },
-    },
+    ...generalCrudOptions.query,
     exclude: ['password'],
   },
 })
@@ -124,10 +111,5 @@ export class UsersController implements CrudController<User> {
   @Post('verify-email')
   verifyRequest(@Body() body: EmailDto) {
     return this.service.verifyRequest(body.email);
-  }
-
-  @Get('contacts-inbox')
-  getContactInbox(@CurrentUser() user: User) {
-    return this.service.getContactInbox(user.id);
   }
 }

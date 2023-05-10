@@ -149,13 +149,6 @@ export class UsersService extends TypeOrmCrudService<User> {
     });
 
     // add to inbox
-    const inboxInstance = this.inboxRepo.create({
-      message: request.message,
-      senderId: request.senderId,
-      receiverId: request.receiverId,
-    });
-
-    await this.inboxRepo.save(inboxInstance);
 
     // add to contact
     try {
@@ -193,20 +186,6 @@ export class UsersService extends TypeOrmCrudService<User> {
       where: { userId: currentUser },
       relations: ['contact'],
     });
-  }
-
-  async getContactInbox(currentUser: string) {
-    return this.userContactListRepo
-      .createQueryBuilder('ct')
-      .innerJoinAndSelect('ct.contact', 'contact')
-      .innerJoinAndSelect('contact.sentMessages', 'sentMessages')
-      .innerJoinAndSelect('contact.receivedMessages', 'receivedMessages')
-      .where('ct.userId = :currentUser', { currentUser })
-      .andWhere('receivedMessages.senderId = :currentUser', { currentUser })
-      .andWhere('sentMessages.receiverId = :currentUser', { currentUser })
-      .orderBy('sentMessages.createdAt', 'DESC')
-      .addOrderBy('receivedMessages.createdAt', 'DESC')
-      .getMany();
   }
 
   async contactGuard(

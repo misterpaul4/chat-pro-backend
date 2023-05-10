@@ -6,10 +6,10 @@ import {
   MinLength,
 } from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, ManyToMany, OneToMany } from 'typeorm';
 import { UserChatRequests } from './user-chat-requests';
 import { UserContactList } from './user-contactlist';
-import { Inbox } from 'src/modules/inbox/entities/inbox.entity';
+import { Thread } from 'src/modules/thread/entities/thread.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -50,9 +50,6 @@ export class User extends BaseEntity {
   @OneToMany(() => UserContactList, (contacts) => contacts.user)
   contacts: UserContactList[];
 
-  @OneToMany(() => Inbox, (sentMessages) => sentMessages.sender)
-  sentMessages: Inbox[];
-
-  @OneToMany(() => Inbox, (receivedMessages) => receivedMessages.receiver)
-  receivedMessages: Inbox[];
+  @ManyToMany(() => Thread, (thread) => thread.users)
+  threads: Thread;
 }

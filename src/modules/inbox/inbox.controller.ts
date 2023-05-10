@@ -35,34 +35,22 @@ import { User } from '../users/entities/user.entity';
     },
   },
   dto: { create: CreateInboxDto, update: UpdateInboxDto },
-  routes: {
-    exclude: [
-      'createOneBase',
-      'getManyBase',
-      'getOneBase',
-      'createManyBase',
-      'deleteOneBase',
-      'updateOneBase',
-      'recoverOneBase',
-      'replaceOneBase',
-    ],
-  },
 })
 @Controller('inbox')
 @UseGuards(AuthGuard())
 export class InboxController implements CrudController<Inbox> {
   constructor(public service: InboxService) {}
 
-  @Get()
-  @UseInterceptors(CrudRequestInterceptor)
-  getInbox(@CurrentUser() user: User, @ParsedRequest() req: CrudRequest) {
-    // get only logged in user's messages
-    req.parsed.search.$and.push({
-      $or: [{ receiverId: { $eq: user.id } }, { senderId: { $eq: user.id } }],
-    });
-    req.parsed.sort = [{ field: 'createdAt', order: 'DESC' }];
-    return this.service.getMany(req);
-  }
+  // @Get()
+  // @UseInterceptors(CrudRequestInterceptor)
+  // getInbox(@CurrentUser() user: User, @ParsedRequest() req: CrudRequest) {
+  //   // get only logged in user's messages
+  //   req.parsed.search.$and.push({
+  //     $or: [{ receiverId: { $eq: user.id } }, { senderId: { $eq: user.id } }],
+  //   });
+  //   req.parsed.sort = [{ field: 'createdAt', order: 'DESC' }];
+  //   return this.service.getMany(req);
+  // }
 
   @Post()
   @UseInterceptors(CrudRequestInterceptor)

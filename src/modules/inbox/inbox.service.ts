@@ -24,7 +24,6 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
     req: CrudRequest,
   ) {
     // check contact and if blocked
-    await this.userService.contactGuard(currentUser, payload.receiverId);
     return super.createOne(req, { ...payload, senderId: currentUser });
   }
 }

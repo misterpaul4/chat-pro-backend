@@ -12,8 +12,8 @@ import { DeepPartial, In, Repository } from 'typeorm';
 import { StatusEnum } from './dto/user-operations.dto';
 import { User } from './entities/user.entity';
 import { UserChatRequests } from './entities/user-chat-requests';
-import { UserBlockList } from './entities/user-blocklist';
 import { UserContactList } from './entities/user-contactlist';
+import { Inbox } from '../inbox/entities/inbox.entity';
 
 @Injectable()
 export class UsersService extends TypeOrmCrudService<User> {
@@ -23,10 +23,10 @@ export class UsersService extends TypeOrmCrudService<User> {
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(UserChatRequests)
     private userChatRequestsRepo: Repository<UserChatRequests>,
-    @InjectRepository(UserBlockList)
-    private userBlockListRepo: Repository<UserBlockList>,
     @InjectRepository(UserContactList)
     private userContactListRepo: Repository<UserContactList>,
+    @InjectRepository(Inbox)
+    private inboxRepo: Repository<Inbox>,
   ) {
     super(userRepo);
   }
@@ -56,48 +56,10 @@ export class UsersService extends TypeOrmCrudService<User> {
   }
 
   async block(currentUser: string, blockList: string[]) {
-    // prevent users from blocking themselves
-    // const list = blockList.filter((userId) => userId !== currentUser);
-
-    // const values = list.map((blockedUserId) => ({
-    //   userId: currentUser,
-    //   blockedUserId,
-    // }));
-
-    // const response = await this.userRepo
-    //   .createQueryBuilder()
-    //   .insert()
-    //   .into(UserBlockList)
-    //   .values(values)
-    //   .orIgnore()
-    //   .execute();
-
-    // const totalBlocked = response.raw.length;
-
-    // return {
-    //   message: `${totalBlocked} ${
-    //     totalBlocked === 1 ? 'user' : 'users'
-    //   } blocked`,
-    // };
     return this.blockUnblock(currentUser, blockList, 'block');
   }
 
   async unblock(currentUser: string, unBlockList: string[]) {
-    // const response = await this.userRepo
-    //   .createQueryBuilder()
-    //   .delete()
-    //   .from(UserBlockList)
-    //   .where('userId = :currentUser', { currentUser })
-    //   .andWhere('blockedUserId IN (:...unBlockList)', { unBlockList })
-    //   .execute();
-
-    // const totalUnBlocked = response.raw.length;
-
-    // return {
-    //   message: `${totalUnBlocked} ${
-    //     totalUnBlocked === 1 ? 'user' : 'users'
-    //   } unblocked`,
-    // };
     return this.blockUnblock(currentUser, unBlockList, 'unblock');
   }
 
@@ -107,11 +69,13 @@ export class UsersService extends TypeOrmCrudService<User> {
       throw new BadRequestException('You cannot send a request to yourself');
     }
 
-    // check block list
-    const userIsBlocked = await this.checkBlockList(
-      currentUser,
-      payload.receiverId,
-    );
+    // check if user is blocked
+    const userIsBlocked = await this.userContactListRepo.findOne({
+      where: {
+        userId: payload.receiverId,
+        contactId: currentUser,
+      },
+    });
 
     if (userIsBlocked) {
       throw new BadRequestException('You cannot send this user a request');
@@ -135,10 +99,15 @@ export class UsersService extends TypeOrmCrudService<User> {
       throw new BadRequestException(pendingRequestErrorMessage);
     }
 
+    // add to contact
+    try {
+      await this.addToContact(currentUser, payload.receiverId);
+    } catch (error) {
+      this.logger.error('error saving contact after sending request');
+    }
+
     try {
       const response = await this.userChatRequestsRepo.save(instance);
-      // add to contact
-      await this.addToContact(currentUser, payload.receiverId);
       return response;
     } catch (error) {
       const message = 'error sending message request';
@@ -162,7 +131,7 @@ export class UsersService extends TypeOrmCrudService<User> {
     return this.userChatRequestsRepo.find({ where: { senderId: currentUser } });
   }
 
-  async approveRequest(currentUser: string, id: string) {
+  async approveRequest(currentUser: string, id: string, req: CrudRequest) {
     // check if request can be approved by user
     const request = await this.userChatRequestsRepo.findOne({
       where: { id, receiverId: currentUser },
@@ -179,8 +148,23 @@ export class UsersService extends TypeOrmCrudService<User> {
       status: StatusEnum.Approved,
     });
 
+    // add to inbox
+    const inboxInstance = this.inboxRepo.create({
+      message: request.message,
+      senderId: request.senderId,
+      receiverId: request.receiverId,
+    });
+
+    await this.inboxRepo.save(inboxInstance);
+
     // add to contact
-    return this.addToContact(currentUser, request.senderId);
+    try {
+      return this.addToContact(currentUser, request.senderId);
+    } catch (error) {
+      this.logger.error('Error saving contact while approving chat request');
+    }
+
+    return { message: 'Request approved successfully' };
   }
 
   async declineRequest(currentUser: string, id: string) {
@@ -271,16 +255,6 @@ export class UsersService extends TypeOrmCrudService<User> {
     }
 
     return this.userContactListRepo.delete(id);
-  }
-
-  private checkBlockList(userId: string, blockedUserId: string) {
-    // return this.userBlockListRepo.findOne({
-    //   where: { blockedUserId, userId },
-    //   select: ['id'],
-    // });
-    return this.userContactListRepo.findOne({
-      where: { userId, contactId: blockedUserId, blocked: true },
-    });
   }
 
   private async blockUnblock(

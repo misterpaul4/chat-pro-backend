@@ -8,7 +8,6 @@ import {
 import { BaseEntity } from 'src/lib/base.entity';
 import { Column, Entity, OneToMany } from 'typeorm';
 import { UserChatRequests } from './user-chat-requests';
-import { UserBlockList } from './user-blocklist';
 import { UserContactList } from './user-contactlist';
 import { Inbox } from 'src/modules/inbox/entities/inbox.entity';
 
@@ -38,9 +37,6 @@ export class User extends BaseEntity {
   @IsString()
   @IsOptional()
   middleName: string;
-
-  @OneToMany(() => UserBlockList, (blockedUsers) => blockedUsers.user)
-  blockedUsers: UserBlockList[];
 
   @OneToMany(() => UserChatRequests, (sentRequest) => sentRequest.sender)
   sentRequest: User[];

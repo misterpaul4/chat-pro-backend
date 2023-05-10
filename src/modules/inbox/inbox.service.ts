@@ -27,19 +27,4 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
     await this.userService.contactGuard(currentUser, payload.receiverId);
     return super.createOne(req, { ...payload, senderId: currentUser });
   }
-
-  getShallowInbox(currentUser: string) {
-    return (
-      this.inboxRepo
-        .createQueryBuilder('inbox')
-        // .distinctOn(['inbox.senderId', 'inbox.receiverId'])
-        .where('inbox.senderId = :userId OR inbox.receiverId = :userId', {
-          userId: currentUser,
-        })
-        .orderBy('inbox.createdAt', 'DESC')
-        .getMany()
-    );
-
-    // return super.getMany(req);
-  }
 }

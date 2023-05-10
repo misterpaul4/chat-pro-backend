@@ -27,6 +27,13 @@ import { User } from '../users/entities/user.entity';
     type: Inbox,
   },
   ...generalCrudOptions,
+  query: {
+    ...generalCrudOptions.query,
+    join: {
+      sender: { eager: false, exclude: ['password'] },
+      receiver: { eager: false, exclude: ['password'] },
+    },
+  },
   dto: { create: CreateInboxDto, update: UpdateInboxDto },
   routes: {
     exclude: [
@@ -55,11 +62,6 @@ export class InboxController implements CrudController<Inbox> {
     });
     req.parsed.sort = [{ field: 'createdAt', order: 'DESC' }];
     return this.service.getMany(req);
-  }
-
-  @Get('shallow')
-  getShallowInbox(@CurrentUser() user: User) {
-    return this.service.getShallowInbox(user.id);
   }
 
   @Post()

@@ -10,5 +10,6 @@ import { UsersModule } from '../users/users.module';
   controllers: [InboxController],
   providers: [InboxService],
   imports: [TypeOrmModule.forFeature([Inbox]), AuthModule, UsersModule],
+  exports: [InboxService],
 })
 export class InboxModule {}

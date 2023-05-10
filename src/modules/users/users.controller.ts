@@ -6,10 +6,17 @@ import {
   Param,
   Post,
   UseGuards,
+  UseInterceptors,
   UsePipes,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { Crud, CrudController } from '@nestjsx/crud';
+import {
+  Crud,
+  CrudController,
+  CrudRequest,
+  CrudRequestInterceptor,
+  ParsedRequest,
+} from '@nestjsx/crud';
 import { User } from './entities/user.entity';
 import { generalCrudOptions } from 'src/utils/crud';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -73,8 +80,13 @@ export class UsersController implements CrudController<User> {
 
   @Post('chat-requests/approve/:id')
   @UsePipes(new UuidValidationPipe())
-  approveRequest(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.service.approveRequest(user.id, id);
+  @UseInterceptors(CrudRequestInterceptor)
+  approveRequest(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @ParsedRequest() req: CrudRequest,
+  ) {
+    return this.service.approveRequest(user.id, id, req);
   }
 
   @Post('chat-requests/decline/:id')

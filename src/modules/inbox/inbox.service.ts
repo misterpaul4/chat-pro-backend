@@ -1,10 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Inbox } from './entities/inbox.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateInboxDto } from './dto/create-inbox.dto';
-import { CrudRequest } from '@nestjsx/crud';
 import { UsersService } from '../users/users.service';
 
 @Injectable()
@@ -18,12 +17,18 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
     super(inboxRepo);
   }
 
-  async sendMessage(
-    currentUser: string,
-    payload: CreateInboxDto,
-    req: CrudRequest,
-  ) {
-    // check contact and if blocked
-    return super.createOne(req, { ...payload, senderId: currentUser });
+  async sendMessage(payload: CreateInboxDto) {
+    const instance = this.inboxRepo.create(payload);
+
+    try {
+      return await this.inboxRepo.save(instance);
+    } catch (error) {
+      this.logger.error({
+        message: 'Error saving message to Inbox Table',
+        payload: instance,
+      });
+
+      throw new BadRequestException('Invalid thread');
+    }
   }
 }

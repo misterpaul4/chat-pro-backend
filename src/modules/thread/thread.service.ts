@@ -1,11 +1,18 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotAcceptableException,
+} from '@nestjs/common';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Thread } from './entities/thread.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateThreadDto } from './dto/create-thread.dto';
+import { CreatePrivateThreadDto } from './dto/create-thread.dto';
 import { InboxService } from '../inbox/inbox.service';
 import { getValue } from 'express-ctx';
+import { User } from '../users/entities/user.entity';
+import { generatePrivateThreadCode } from 'src/utils/string';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -18,15 +25,33 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     super(threadRepo);
   }
 
-  async createdThread(payload: CreateThreadDto) {
-    const { inbox, userIds } = payload;
-    const users = userIds.map((id) => ({ id })) as any;
+  async createPrivateThread(payload: CreatePrivateThreadDto) {
+    const sender: User = getValue('user');
+    const { inbox, receiverId } = payload;
+    const users = [sender, { id: receiverId }] as any;
+    const code = generatePrivateThreadCode(receiverId, sender.id);
 
-    const instance = this.threadRepo.create({ users });
-
-    const sender = getValue('user');
+    const instance = this.threadRepo.create({
+      users,
+      code,
+    });
 
     let thread: Thread;
+
+    // check if duplicate thread does not exist between both users
+    const existingThread = await this.threadRepo.findOne({
+      where: {
+        code,
+      },
+    });
+
+    if (existingThread) {
+      this.logger.error({
+        message: 'Error creating private thread, already exist',
+        payload: { user: sender, receiverId },
+      });
+      throw new NotAcceptableException('You have an existing thread');
+    }
 
     // save thread
     try {

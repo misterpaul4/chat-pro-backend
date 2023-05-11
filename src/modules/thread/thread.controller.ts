@@ -1,22 +1,10 @@
-import {
-  Body,
-  Controller,
-  Post,
-  UseGuards,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ThreadService } from './thread.service';
-import {
-  Crud,
-  CrudController,
-  CrudRequest,
-  CrudRequestInterceptor,
-  ParsedRequest,
-} from '@nestjsx/crud';
+import { Crud, CrudController } from '@nestjsx/crud';
 import { Thread } from './entities/thread.entity';
 import { generalCrudOptions } from 'src/utils/crud';
-import { CreateThreadDto } from './dto/create-thread.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { CreatePrivateThreadDto } from './dto/create-thread.dto';
 
 @Crud({
   model: {
@@ -24,6 +12,14 @@ import { AuthGuard } from '@nestjs/passport';
   },
   ...generalCrudOptions,
   routes: { only: ['getOneBase', 'getManyBase'] },
+  query: {
+    ...generalCrudOptions.query,
+    join: {
+      users: { eager: false, exclude: ['password'] },
+      messages: { eager: false },
+    },
+    exclude: ['code'],
+  },
 })
 @Controller('thread')
 @UseGuards(AuthGuard())
@@ -32,7 +28,7 @@ export class ThreadController implements CrudController<Thread> {
   constructor(public service: ThreadService) {}
 
   @Post()
-  createThread(@Body() body: CreateThreadDto) {
-    return this.service.createdThread(body);
+  createPrivateThread(@Body() body: CreatePrivateThreadDto) {
+    return this.service.createPrivateThread(body);
   }
 }

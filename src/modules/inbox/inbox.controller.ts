@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, UseGuards } from '@nestjs/common';
 import { InboxService } from './inbox.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Crud, CrudController } from '@nestjsx/crud';
@@ -6,8 +6,6 @@ import { Inbox } from './entities/inbox.entity';
 import { generalCrudOptions } from 'src/utils/crud';
 import { CreateInboxDto } from './dto/create-inbox.dto';
 import { UpdateInboxDto } from './dto/update-inbox.dto';
-import { CurrentUser } from '../auth/current-user-decorator';
-import { User } from '../users/entities/user.entity';
 
 @Crud({
   model: {

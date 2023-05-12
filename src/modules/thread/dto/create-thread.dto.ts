@@ -1,13 +1,7 @@
-import { Type } from 'class-transformer';
-import { IsObject, IsUUID, ValidateNested } from 'class-validator';
-import { CreateInboxDto } from 'src/modules/inbox/dto/create-inbox.dto';
+import { IsUUID } from 'class-validator';
+import { MessageDto } from './message.dto';
 
-export class CreatePrivateThreadDto {
+export class CreatePrivateThreadDto extends MessageDto {
   @IsUUID('4')
   receiverId: string;
-
-  @IsObject()
-  @ValidateNested()
-  @Type(() => CreateInboxDto)
-  inbox: CreateInboxDto;
 }

@@ -7,12 +7,13 @@ import {
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Thread } from './entities/thread.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { CreatePrivateThreadDto } from './dto/create-thread.dto';
 import { InboxService } from '../inbox/inbox.service';
 import { getValue } from 'express-ctx';
 import { User } from '../users/entities/user.entity';
 import { generatePrivateThreadCode } from 'src/utils/string';
+import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -21,6 +22,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
   constructor(
     @InjectRepository(Thread) private threadRepo: Repository<Thread>,
     private inboxService: InboxService,
+    private dataSource: DataSource,
   ) {
     super(threadRepo);
   }
@@ -67,5 +69,29 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     await this.inboxService.sendMessage({ ...inbox, thread, sender });
 
     return thread;
+  }
+
+  async addMessage(payload: CreateInboxDto) {
+    const sender: User = getValue('user');
+    await this.threadGuard(sender.id, payload.threadId);
+
+    return this.inboxService.sendMessage({
+      ...payload,
+      sender,
+    });
+  }
+
+  private async threadGuard(userId: string, threadId: string) {
+    try {
+      return await this.dataSource
+        .createQueryBuilder()
+        .from('thread_users_user', 'th')
+        .where('th.userId = :userId', { userId })
+        .andWhere('th.threadId = :threadId', { threadId })
+        .getRawOne();
+    } catch (error) {
+      this.logger.error('Thread not found for user');
+      throw new BadRequestException('You cannot send a message to this thread');
+    }
   }
 }

@@ -2,6 +2,7 @@ import {
   GetManyDefaultResponse,
   ParamOption,
   QueryOptions,
+  RoutesOptions,
 } from '@nestjsx/crud';
 
 export const generalCrudOptions: {
@@ -16,6 +17,19 @@ export const generalCrudOptions: {
     },
   },
   query: { alwaysPaginate: true },
+};
+
+export const excludeAllRoutes: RoutesOptions = {
+  exclude: [
+    'createManyBase',
+    'createOneBase',
+    'deleteOneBase',
+    'getManyBase',
+    'getOneBase',
+    'recoverOneBase',
+    'replaceOneBase',
+    'updateOneBase',
+  ],
 };
 
 export const emptyResponse: GetManyDefaultResponse<unknown> = {

@@ -18,7 +18,7 @@ import {
   ParsedRequest,
 } from '@nestjsx/crud';
 import { User } from './entities/user.entity';
-import { generalCrudOptions } from 'src/utils/crud';
+import { excludeAllRoutes, generalCrudOptions } from 'src/utils/crud';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../auth/current-user-decorator';
@@ -37,12 +37,23 @@ import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
   },
   ...generalCrudOptions,
   dto: { create: CreateUserDto, update: UpdateUserDto },
-  routes: {
-    only: ['getOneBase', 'getManyBase'],
-  },
+  routes: excludeAllRoutes,
   query: {
     ...generalCrudOptions.query,
     exclude: ['password'],
+    join: {
+      threads: {
+        eager: false,
+        exclude: ['code'],
+      },
+      ['threads.messages']: {
+        eager: false,
+      },
+      ['threads.users']: {
+        eager: false,
+        exclude: ['password'],
+      },
+    },
   },
 })
 @Controller('users')

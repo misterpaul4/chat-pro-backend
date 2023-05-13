@@ -1,10 +1,18 @@
 import { Type } from 'class-transformer';
-import { IsObject, ValidateNested } from 'class-validator';
+import { IsEmpty, IsObject, ValidateNested } from 'class-validator';
 import { CreateInboxDto } from 'src/modules/inbox/dto/create-inbox.dto';
+
+class IInboxDto extends CreateInboxDto {
+  @IsEmpty()
+  threadId: string;
+
+  @IsEmpty()
+  replyingTo?: string;
+}
 
 export class MessageDto {
   @IsObject()
   @ValidateNested()
-  @Type(() => CreateInboxDto)
-  inbox: CreateInboxDto;
+  @Type(() => IInboxDto)
+  inbox: IInboxDto;
 }

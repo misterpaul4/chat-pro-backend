@@ -1,4 +1,9 @@
+import { getValue } from 'express-ctx';
+import { User } from 'src/modules/users/entities/user.entity';
 import {
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
   CreateDateColumn,
   DeleteDateColumn,
   PrimaryGeneratedColumn,
@@ -17,4 +22,23 @@ export class BaseEntity {
 
   @DeleteDateColumn({ type: 'timestamptz', nullable: true })
   deletedAt?: Date;
+}
+export class BaseEntityWithCreators extends BaseEntity {
+  @BeforeInsert()
+  updateCreatedBy() {
+    const user: User = getValue('user');
+    this.createdBy = user.id;
+  }
+
+  @BeforeUpdate()
+  updateUpdatedBy() {
+    const user: User = getValue('user');
+    this.updatedBy = user.id;
+  }
+
+  @Column('text', { nullable: true, default: 'System' })
+  createdBy?: string;
+
+  @Column('text', { nullable: true, default: 'System' })
+  updatedBy?: string;
 }

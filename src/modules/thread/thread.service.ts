@@ -53,13 +53,28 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
         );
       }
 
+      // save contact
+      try {
+        const instance = this.userContactListRepo.create({
+          userId: sender.id,
+          contactId: receiverId,
+        });
+        await this.userContactListRepo.save(instance);
+      } catch (error) {
+        this.logger.error({
+          message: 'Error saving contact',
+          userId: sender.id,
+          contactId: receiverId,
+        });
+      }
+
       type = inContactList ? ThreadTypeEnum.Private : ThreadTypeEnum.Request;
     } else {
       // user can create thread with themself
-      type = ThreadTypeEnum.Private;
+      type = ThreadTypeEnum.Self;
     }
 
-    // check if duplicate thread does not exist between both users
+    // check for duplicate thread
     const existingThread = await this.threadRepo.findOne({
       where: {
         code,
@@ -103,6 +118,54 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       ...payload,
       sender,
     });
+  }
+
+  async approveRequest(id: string) {
+    const currentUser: User = getValue('user');
+    await this.requestActionGuard(currentUser.id, id);
+    await this.threadRepo.update(id, { type: ThreadTypeEnum.Private });
+
+    return { message: 'Request approved' };
+  }
+
+  async declineRequest(id: string) {
+    const currentUser: User = getValue('user');
+    const thread = await this.requestActionGuard(currentUser.id, id);
+    // soft delete thread
+    await this.threadRepo.update(id, { deletedAt: new Date() });
+    const instance = this.userContactListRepo.create({
+      userId: currentUser.id,
+      contactId: thread.thread_createdBy,
+      blocked: true,
+    });
+
+    // block user
+    return this.userContactListRepo.save(instance);
+  }
+
+  private async requestActionGuard(userId: string, threadId: string) {
+    try {
+      const resp = await this.dataSource
+        .createQueryBuilder()
+        .from('thread_users_user', 'th')
+        .innerJoinAndSelect('thread', 'thread')
+        .where('th.userId = :userId', { userId })
+        .andWhere('th.threadId = :threadId', { threadId })
+        .andWhere('thread.type = :type', {
+          type: ThreadTypeEnum.Request,
+        })
+        .andWhere('thread.createdBy != :userId', { userId })
+        .getRawOne();
+
+      if (!resp) {
+        throw new Error();
+      }
+
+      return resp;
+    } catch (error) {
+      this.logger.error('Thread not found while trying update thread type');
+      throw new BadRequestException('You cannot perform action on this thread');
+    }
   }
 
   private async threadGuard(userId: string, threadId: string) {

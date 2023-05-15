@@ -1,12 +1,12 @@
 import { IsOptional, IsString } from 'class-validator';
-import { BaseEntity } from 'src/lib/base.entity';
+import { BaseEntityWithCreators } from 'src/lib/base.entity';
 import { Inbox } from 'src/modules/inbox/entities/inbox.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
 import { ThreadTypeEnum } from '../dto/enum';
 
 @Entity()
-export class Thread extends BaseEntity {
+export class Thread extends BaseEntityWithCreators {
   @ManyToMany(() => User, (user) => user.threads, { cascade: true })
   @JoinTable()
   users: User[];

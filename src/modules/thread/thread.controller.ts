@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { ThreadService } from './thread.service';
 import { Crud, CrudController } from '@nestjsx/crud';
 import { Thread } from './entities/thread.entity';
@@ -33,8 +33,18 @@ export class ThreadController implements CrudController<Thread> {
     return this.service.createThread(body);
   }
 
-  @Post('send')
+  @Post('send-message')
   addMessage(@Body() body: CreateInboxDto) {
     return this.service.addMessage(body);
+  }
+
+  @Post(':id/approve')
+  approveRequest(@Param('id') id: string) {
+    return this.service.approveRequest(id);
+  }
+
+  @Post(':id/decline')
+  declineRequest(@Param('id') id: string) {
+    return this.service.declineRequest(id);
   }
 }

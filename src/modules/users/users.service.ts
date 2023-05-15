@@ -13,7 +13,6 @@ import { StatusEnum } from './dto/user-operations.dto';
 import { User } from './entities/user.entity';
 import { UserChatRequests } from './entities/user-chat-requests';
 import { UserContactList } from './entities/user-contactlist';
-import { Inbox } from '../inbox/entities/inbox.entity';
 
 @Injectable()
 export class UsersService extends TypeOrmCrudService<User> {
@@ -25,8 +24,6 @@ export class UsersService extends TypeOrmCrudService<User> {
     private userChatRequestsRepo: Repository<UserChatRequests>,
     @InjectRepository(UserContactList)
     private userContactListRepo: Repository<UserContactList>,
-    @InjectRepository(Inbox)
-    private inboxRepo: Repository<Inbox>,
   ) {
     super(userRepo);
   }

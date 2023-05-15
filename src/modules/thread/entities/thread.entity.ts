@@ -3,6 +3,7 @@ import { BaseEntity } from 'src/lib/base.entity';
 import { Inbox } from 'src/modules/inbox/entities/inbox.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
+import { ThreadTypeEnum } from '../dto/enum';
 
 @Entity()
 export class Thread extends BaseEntity {
@@ -21,11 +22,15 @@ export class Thread extends BaseEntity {
   @Column('text', { nullable: true })
   description?: string;
 
-  // thread WITH a code indicates a private chat
+  // thread WITH a code indicates a private chat or a request
   // thread WITHOUT a code indicates a group chat
   @Column('text', { nullable: true })
   code?: string;
 
-  @Column('boolean', { default: false })
-  group: boolean;
+  @Column({
+    type: 'enum',
+    enum: ThreadTypeEnum,
+    default: ThreadTypeEnum.Private,
+  })
+  type: ThreadTypeEnum;
 }

@@ -5,7 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateInboxDto } from './dto/create-inbox.dto';
 import { UsersService } from '../users/users.service';
-import { CrudRequest, CrudRequestOptions } from '@nestjsx/crud';
+import { CrudRequest } from '@nestjsx/crud';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class InboxService extends TypeOrmCrudService<Inbox> {
@@ -33,7 +34,10 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
     }
   }
 
-  async getUserInbox(req: CrudRequest, currentUser: string) {
+  async getUserInbox(
+    req: CrudRequest,
+    currentUser: string,
+  ): Promise<User['threads'] | []> {
     req.parsed.paramsFilter.push({
       field: 'id',
       operator: '$eq',
@@ -42,7 +46,13 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
 
     req.parsed.search.$and.push({ id: { $eq: currentUser } });
 
-    const resp = await this.userService.getOne(req);
+    let resp: User;
+
+    try {
+      resp = await this.userService.getOne(req);
+    } catch (error) {
+      return [];
+    }
 
     return resp.threads;
   }

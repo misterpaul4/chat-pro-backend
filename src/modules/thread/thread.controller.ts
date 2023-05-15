@@ -29,8 +29,8 @@ export class ThreadController implements CrudController<Thread> {
   constructor(public service: ThreadService) {}
 
   @Post()
-  createPrivateThread(@Body() body: CreatePrivateThreadDto) {
-    return this.service.createPrivateThread(body);
+  createThread(@Body() body: CreatePrivateThreadDto) {
+    return this.service.createThread(body);
   }
 
   @Post('send')

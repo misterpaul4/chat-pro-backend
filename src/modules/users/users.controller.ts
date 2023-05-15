@@ -6,17 +6,10 @@ import {
   Param,
   Post,
   UseGuards,
-  UseInterceptors,
   UsePipes,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import {
-  Crud,
-  CrudController,
-  CrudRequest,
-  CrudRequestInterceptor,
-  ParsedRequest,
-} from '@nestjsx/crud';
+import { Crud, CrudController } from '@nestjsx/crud';
 import { User } from './entities/user.entity';
 import { excludeAllRoutes, generalCrudOptions } from 'src/utils/crud';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -28,7 +21,6 @@ import {
   EmailDto,
 } from './dto/user-operations.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { UserChatRequests } from './entities/user-chat-requests';
 import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
 
 @Crud({
@@ -71,38 +63,6 @@ export class UsersController implements CrudController<User> {
     return this.service.unblock(user.id, dto.userIds);
   }
 
-  @Post('chat-requests/send')
-  sendRequest(@CurrentUser() user: User, @Body() payload: UserChatRequests) {
-    return this.service.sendRequest(user.id, payload);
-  }
-
-  @Post('chat-requests/approve/:id')
-  @UsePipes(new UuidValidationPipe())
-  @UseInterceptors(CrudRequestInterceptor)
-  approveRequest(
-    @CurrentUser() user: User,
-    @Param('id') id: string,
-    @ParsedRequest() req: CrudRequest,
-  ) {
-    return this.service.approveRequest(user.id, id, req);
-  }
-
-  @Post('chat-requests/decline/:id')
-  @UsePipes(new UuidValidationPipe())
-  declineRequest(@CurrentUser() user: User, @Param('id') id: string) {
-    return this.service.declineRequest(user.id, id);
-  }
-
-  @Get('chat-requests/received')
-  getChatRequest(@CurrentUser() user: User) {
-    return this.service.getRequests(user.id);
-  }
-
-  @Get('chat-requests/sent')
-  getSentChatRequest(@CurrentUser() user: User) {
-    return this.service.getSentRequests(user.id);
-  }
-
   @Get('contacts')
   getContacts(@CurrentUser() user: User) {
     return this.service.getContacts(user.id);
@@ -120,7 +80,7 @@ export class UsersController implements CrudController<User> {
   }
 
   @Post('verify-email')
-  verifyRequest(@Body() body: EmailDto) {
-    return this.service.verifyRequest(body.email);
+  verifyUser(@Body() body: EmailDto) {
+    return this.service.verifyUser(body.email);
   }
 }

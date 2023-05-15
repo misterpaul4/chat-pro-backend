@@ -14,6 +14,8 @@ import { getValue } from 'express-ctx';
 import { User } from '../users/entities/user.entity';
 import { generatePrivateThreadCode } from 'src/utils/string';
 import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
+import { ThreadTypeEnum } from './dto/enum';
+import { UserContactList } from '../users/entities/user-contactlist';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -23,22 +25,39 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     @InjectRepository(Thread) private threadRepo: Repository<Thread>,
     private inboxService: InboxService,
     private dataSource: DataSource,
+    @InjectRepository(UserContactList)
+    private userContactListRepo: Repository<UserContactList>,
   ) {
     super(threadRepo);
   }
 
-  async createPrivateThread(payload: CreatePrivateThreadDto) {
+  async createThread(payload: CreatePrivateThreadDto) {
     const sender: User = getValue('user');
     const { inbox, receiverId } = payload;
     const users = [sender, { id: receiverId }] as any;
     const code = generatePrivateThreadCode(receiverId, sender.id);
 
-    const instance = this.threadRepo.create({
-      users,
-      code,
-    });
-
     let thread: Thread;
+
+    let type: ThreadTypeEnum;
+
+    if (receiverId !== sender.id) {
+      // check if in contact list
+      const inContactList = await this.userContactListRepo.findOne({
+        where: { userId: sender.id, contactId: receiverId },
+      });
+
+      if (inContactList?.blocked) {
+        throw new BadRequestException(
+          'This thread cannot be created. you have been blocked by user',
+        );
+      }
+
+      type = inContactList ? ThreadTypeEnum.Private : ThreadTypeEnum.Request;
+    } else {
+      // user can create thread with themself
+      type = ThreadTypeEnum.Private;
+    }
 
     // check if duplicate thread does not exist between both users
     const existingThread = await this.threadRepo.findOne({
@@ -56,6 +75,11 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     }
 
     // save thread
+    const instance = this.threadRepo.create({
+      users,
+      code,
+      type,
+    });
     try {
       thread = await this.threadRepo.save(instance);
     } catch (error) {
@@ -83,14 +107,24 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
 
   private async threadGuard(userId: string, threadId: string) {
     try {
-      return await this.dataSource
+      const resp = await this.dataSource
         .createQueryBuilder()
         .from('thread_users_user', 'th')
+        .innerJoinAndSelect('thread', 'thread')
         .where('th.userId = :userId', { userId })
         .andWhere('th.threadId = :threadId', { threadId })
+        .andWhere('thread.type != :type', {
+          type: ThreadTypeEnum.Request,
+        })
         .getRawOne();
+
+      if (!resp) {
+        throw new Error();
+      }
+
+      return resp;
     } catch (error) {
-      this.logger.error('Thread not found for user');
+      this.logger.error('Thread not found while trying to send message');
       throw new BadRequestException('You cannot send a message to this thread');
     }
   }

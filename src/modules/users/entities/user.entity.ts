@@ -7,7 +7,6 @@ import {
 } from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
 import { Column, Entity, ManyToMany, OneToMany } from 'typeorm';
-import { UserChatRequests } from './user-chat-requests';
 import { UserContactList } from './user-contactlist';
 import { Thread } from 'src/modules/thread/entities/thread.entity';
 
@@ -37,15 +36,6 @@ export class User extends BaseEntity {
   @IsString()
   @IsOptional()
   middleName: string;
-
-  @OneToMany(() => UserChatRequests, (sentRequest) => sentRequest.sender)
-  sentRequest: User[];
-
-  @OneToMany(
-    () => UserChatRequests,
-    (receivedRequest) => receivedRequest.receiver,
-  )
-  receivedRequest: User[];
 
   @OneToMany(() => UserContactList, (contacts) => contacts.user)
   contacts: UserContactList[];

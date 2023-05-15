@@ -44,7 +44,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     if (receiverId !== sender.id) {
       // check if in contact list
       const inContactList = await this.userContactListRepo.findOne({
-        where: { userId: sender.id, contactId: receiverId },
+        where: { contactId: sender.id, userId: receiverId },
       });
 
       if (inContactList?.blocked) {
@@ -68,8 +68,8 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
 
     if (existingThread) {
       this.logger.error({
-        message: 'Error creating private thread, already exist',
-        payload: { user: sender, receiverId },
+        message: 'Error creating thread, already exist',
+        payload: { user: sender, receiverId, existingThread },
       });
       throw new NotAcceptableException('You have an existing thread');
     }

@@ -62,24 +62,6 @@ export class UsersService extends TypeOrmCrudService<User> {
     });
   }
 
-  async contactGuard(
-    currentUser: string,
-    contactId: string,
-    errorMessage = 'Error while performing request',
-  ) {
-    try {
-      const contact = await this.userContactListRepo.findOneOrFail({
-        where: { userId: currentUser, contactId, blocked: false },
-        select: ['id'],
-      });
-
-      return contact;
-    } catch (error) {
-      this.logger.error({ errorMessage, error });
-      throw new BadRequestException({ error: errorMessage });
-    }
-  }
-
   async addToContact(currentUser: string, contactId: string, blocked = false) {
     const contact = this.userContactListRepo.create({
       contactId,

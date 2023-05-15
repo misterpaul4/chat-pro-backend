@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   NotAcceptableException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Thread } from './entities/thread.entity';
@@ -16,6 +17,7 @@ import { generatePrivateThreadCode } from 'src/utils/string';
 import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
 import { ThreadTypeEnum } from './dto/enum';
 import { UserContactList } from '../users/entities/user-contactlist';
+import { CrudRequest } from '@nestjsx/crud';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -29,6 +31,23 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     private userContactListRepo: Repository<UserContactList>,
   ) {
     super(threadRepo);
+  }
+
+  async getSingleThread(req: CrudRequest) {
+    const currentUser: User = getValue('user');
+    // add users relation
+    if (!req.parsed.join.find((j) => j.field === 'users')) {
+      req.parsed.join.push({ field: 'users' });
+    }
+
+    const resp = await super.getOne(req);
+
+    // check if authorized
+    if (!resp.users.find((user) => user.id === currentUser.id)) {
+      throw new UnauthorizedException();
+    }
+
+    return resp;
   }
 
   async createThread(payload: CreatePrivateThreadDto) {

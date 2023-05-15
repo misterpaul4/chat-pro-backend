@@ -1,8 +1,22 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ThreadService } from './thread.service';
-import { Crud, CrudController } from '@nestjsx/crud';
+import {
+  Crud,
+  CrudController,
+  CrudRequest,
+  CrudRequestInterceptor,
+  ParsedRequest,
+} from '@nestjsx/crud';
 import { Thread } from './entities/thread.entity';
-import { generalCrudOptions } from 'src/utils/crud';
+import { excludeAllRoutes, generalCrudOptions } from 'src/utils/crud';
 import { AuthGuard } from '@nestjs/passport';
 import { CreatePrivateThreadDto } from './dto/create-thread.dto';
 import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
@@ -12,7 +26,7 @@ import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
     type: Thread,
   },
   ...generalCrudOptions,
-  routes: { only: ['getOneBase', 'getManyBase'] },
+  routes: excludeAllRoutes,
   query: {
     ...generalCrudOptions.query,
     join: {
@@ -27,6 +41,12 @@ import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
 // @UseFilters(HttpExceptionFilter)
 export class ThreadController implements CrudController<Thread> {
   constructor(public service: ThreadService) {}
+
+  @Get(':id')
+  @UseInterceptors(CrudRequestInterceptor)
+  getSingleThread(@ParsedRequest() req: CrudRequest) {
+    return this.service.getSingleThread(req);
+  }
 
   @Post()
   createThread(@Body() body: CreatePrivateThreadDto) {

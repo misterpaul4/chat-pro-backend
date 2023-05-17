@@ -18,6 +18,7 @@ import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
 import { ThreadTypeEnum } from './dto/enum';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { CrudRequest } from '@nestjsx/crud';
+import { camelCase, mapKeys } from 'lodash';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -139,12 +140,13 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     });
   }
 
-  async approveRequest(id: string) {
+  async approveRequest(id: string): Promise<Thread> {
     const currentUser: User = getValue('user');
-    await this.requestActionGuard(currentUser.id, id);
-    await this.threadRepo.update(id, { type: ThreadTypeEnum.Private });
-
-    return { message: 'Request approved' };
+    const resp = await this.requestActionGuard(currentUser.id, id);
+    const res = mapKeys(resp, (_, key) =>
+      camelCase(key.replace('thread_', '')),
+    );
+    return this.threadRepo.save({ ...res, type: ThreadTypeEnum.Private });
   }
 
   async declineRequest(id: string) {

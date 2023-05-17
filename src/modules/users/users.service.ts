@@ -10,6 +10,8 @@ import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { DeepPartial, In, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { UserContactList } from './entities/user-contactlist';
+import { UpdateContactsDto } from './dto/user-operations.dto';
+import { getValue } from 'express-ctx';
 
 @Injectable()
 export class UsersService extends TypeOrmCrudService<User> {
@@ -45,14 +47,6 @@ export class UsersService extends TypeOrmCrudService<User> {
     const result = await this.userRepo.save(user);
 
     return { ...result, password: undefined };
-  }
-
-  async block(currentUser: string, blockList: string[]) {
-    return this.blockUnblock(currentUser, blockList, 'block');
-  }
-
-  async unblock(currentUser: string, unBlockList: string[]) {
-    return this.blockUnblock(currentUser, unBlockList, 'unblock');
   }
 
   getContacts(currentUser: string) {
@@ -92,44 +86,33 @@ export class UsersService extends TypeOrmCrudService<User> {
     return this.userContactListRepo.delete(id);
   }
 
-  private async blockUnblock(
-    currentUser: string,
-    _list: string[],
-    type: 'block' | 'unblock',
-  ) {
-    const getContacts = await this.userContactListRepo.find({
-      where: { id: In(_list), userId: currentUser },
-    });
+  async updateContacts(payload: UpdateContactsDto) {
+    const { contactIds, ...rest } = payload;
+    const { id }: User = getValue('user');
 
-    const config =
-      type === 'block'
-        ? { block: true, text: 'blocked' }
-        : { block: false, text: 'unblocked' };
-
-    // make sure user can block or unblock these contacts and also not block themselves
-    const currentUserContacts = getContacts.filter(
-      (contact) =>
-        contact.contactId !== currentUser && !contact.blocked == config.block,
-    );
-    const list = currentUserContacts.map((contact) => contact.id);
-
-    if (list.length) {
-      const response = await this.userContactListRepo
-        .createQueryBuilder()
-        .update(UserContactList)
-        .set({ blocked: config.block })
-        .whereInIds(list)
-        .execute();
-
-      const totalBlocked = response.affected;
-
-      return {
-        message: `${totalBlocked} ${totalBlocked === 1 ? 'user' : 'users'} ${
-          config.text
-        }`,
-      };
+    if (!Object.keys(rest).length) {
+      throw new BadRequestException('Update values not provided');
     }
 
-    return { message: `No user was ${config.text}` };
+    const contacts = await this.userContactListRepo.find({
+      where: { id: In(contactIds), userId: id },
+    });
+
+    if (!contacts.length) {
+      throw new BadRequestException('Invalid contact ids');
+    }
+
+    const resp = await this.userContactListRepo
+      .createQueryBuilder()
+      .update(UserContactList)
+      .set(rest)
+      .whereInIds(contacts.map((ct) => ct.id))
+      .execute();
+
+    return {
+      message: `${resp.affected} ${
+        resp.affected > 1 ? 'contacts' : 'contact'
+      } updated successfully`,
+    };
   }
 }

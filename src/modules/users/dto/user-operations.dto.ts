@@ -1,4 +1,5 @@
 import { IsBoolean, IsEmail, IsOptional, IsUUID } from 'class-validator';
+import { UserContactList } from '../entities/user-contactlist';
 
 export class BlockUserDto {
   @IsUUID('4', { each: true })
@@ -28,4 +29,9 @@ export class AddContactDto {
   @IsOptional()
   @IsBoolean()
   blocked?: boolean;
+}
+
+export class UpdateContactsDto extends UserContactList {
+  @IsUUID('4', { each: true })
+  contactIds: string[];
 }

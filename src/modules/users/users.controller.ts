@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
   UsePipes,
@@ -17,8 +18,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../auth/current-user-decorator';
 import {
   AddContactDto,
-  BlockUserDto,
   EmailDto,
+  UpdateContactsDto,
 } from './dto/user-operations.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
@@ -53,16 +54,6 @@ import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
 export class UsersController implements CrudController<User> {
   constructor(public service: UsersService) {}
 
-  @Post('block/add')
-  block(@CurrentUser() user: User, @Body() dto: BlockUserDto) {
-    return this.service.block(user.id, dto.userIds);
-  }
-
-  @Delete('block/remove')
-  unBlock(@CurrentUser() user: User, @Body() dto: BlockUserDto) {
-    return this.service.unblock(user.id, dto.userIds);
-  }
-
   @Get('contacts')
   getContacts(@CurrentUser() user: User) {
     return this.service.getContacts(user.id);
@@ -82,5 +73,10 @@ export class UsersController implements CrudController<User> {
   @Post('verify-email')
   verifyUser(@Body() body: EmailDto) {
     return this.service.verifyUser(body.email);
+  }
+
+  @Patch('mass-update-contacts')
+  updateContacts(@Body() body: UpdateContactsDto) {
+    return this.service.updateContacts(body);
   }
 }

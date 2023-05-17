@@ -145,7 +145,19 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     const resp = await this.requestActionGuard(currentUser.id, id);
     const res = mapKeys(resp, (_, key) =>
       camelCase(key.replace('thread_', '')),
-    );
+    ) as Thread;
+
+    const instance = this.userContactListRepo.create({
+      userId: currentUser.id,
+      contactId: res.createdBy,
+    });
+
+    try {
+      await this.userContactListRepo.save(instance);
+    } catch (error) {
+      this.logger.error({ message: 'Error saving contact', payload: instance });
+    }
+
     return this.threadRepo.save({ ...res, type: ThreadTypeEnum.Private });
   }
 

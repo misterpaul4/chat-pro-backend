@@ -14,6 +14,6 @@ import { UsersGateway } from './users.gateway';
     TypeOrmModule.forFeature([User, UserContactList]),
     forwardRef(() => AuthModule),
   ],
-  exports: [UsersService],
+  exports: [UsersService, UsersGateway],
 })
 export class UsersModule {}

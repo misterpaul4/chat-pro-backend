@@ -30,6 +30,8 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     private dataSource: DataSource,
     @InjectRepository(UserContactList)
     private userContactListRepo: Repository<UserContactList>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
   ) {
     super(threadRepo);
   }
@@ -124,20 +126,37 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       });
     }
 
+    const recipient = await this.userRepo.findOne({
+      where: { id: receiverId },
+      select: ['email'],
+    });
+
     // save message
-    await this.inboxService.saveMessage({ ...inbox, thread, sender });
+    await this.inboxService.saveMessage(
+      { ...inbox, thread, sender },
+      type === ThreadTypeEnum.Request ? 'request' : 'inbox',
+      [recipient.email],
+    );
 
     return thread;
   }
 
   async addMessage(payload: CreateInboxDto) {
     const sender: User = getValue('user');
-    await this.threadGuard(sender.id, payload.threadId);
+    const resp = await this.threadGuard(sender.id, payload.threadId);
 
-    return this.inboxService.saveMessage({
-      ...payload,
-      sender,
-    });
+    const recipientEmails: string[] = resp
+      .map((thread) => thread.users_email)
+      .filter((email) => email !== sender.email);
+
+    return this.inboxService.saveMessage(
+      {
+        ...payload,
+        sender,
+      },
+      'inbox',
+      recipientEmails,
+    );
   }
 
   async approveRequest(id: string): Promise<Thread> {
@@ -207,12 +226,13 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
         .createQueryBuilder()
         .from('thread_users_user', 'th')
         .innerJoinAndSelect('thread', 'thread')
+        .innerJoinAndSelect('thread.users', 'users')
         .where('th.userId = :userId', { userId })
         .andWhere('th.threadId = :threadId', { threadId })
         .andWhere('thread.type != :type', {
           type: ThreadTypeEnum.Request,
         })
-        .getRawOne();
+        .getRawMany();
 
       if (!resp) {
         throw new Error();

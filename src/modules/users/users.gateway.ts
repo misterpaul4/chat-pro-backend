@@ -9,7 +9,6 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UsersService } from './users.service';
 import { Logger } from '@nestjs/common';
 import { SocketEvents } from './enums';
 import { AuthService } from '../auth/auth.service';
@@ -77,17 +76,6 @@ export class UsersGateway
     });
   }
 
-  @SubscribeMessage(SocketEvents.SEND_MESSAGE)
-  async create(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() payload: string,
-  ) {
-    const receiverIds = this.connectedUsers['paul.a@mblhightech.com'] || [];
-    receiverIds.forEach((clientId) =>
-      this.server.to(clientId).emit(SocketEvents.RECEIVE_MESSAGE, payload),
-    );
-  }
-
   @SubscribeMessage('typing')
   async typing(
     @MessageBody('isTyping') isTyping: boolean,
@@ -123,5 +111,16 @@ export class UsersGateway
   async totalConnections(): Promise<number> {
     const sockets = await this.server.fetchSockets();
     return sockets.length;
+  }
+
+  send(recipientEmails: string[], event: `${SocketEvents}`, payload: any) {
+    recipientEmails.forEach((email) => {
+      const socketIds = this.connectedUsers[email];
+      if (socketIds) {
+        socketIds.forEach((clientId) =>
+          this.server.to(clientId).emit(event, payload),
+        );
+      }
+    });
   }
 }

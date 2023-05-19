@@ -7,6 +7,8 @@ import { CreateInboxDto } from './dto/create-inbox.dto';
 import { UsersService } from '../users/users.service';
 import { CrudRequest } from '@nestjsx/crud';
 import { User } from '../users/entities/user.entity';
+import { SocketEvents } from '../users/enums';
+import { UsersGateway } from '../users/users.gateway';
 
 @Injectable()
 export class InboxService extends TypeOrmCrudService<Inbox> {
@@ -15,15 +17,23 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
   constructor(
     @InjectRepository(Inbox) private inboxRepo: Repository<Inbox>,
     private readonly userService: UsersService,
+    private readonly gatewayService: UsersGateway,
   ) {
     super(inboxRepo);
   }
 
-  async saveMessage(payload: CreateInboxDto) {
+  async saveMessage(
+    payload: CreateInboxDto,
+    socketEvent: `${SocketEvents}`,
+    recipientEmails: string[],
+  ) {
     const instance = this.inboxRepo.create(payload);
 
     try {
-      return await this.inboxRepo.save(instance);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { sender, ...resp } = await this.inboxRepo.save(instance);
+      this.gatewayService.send(recipientEmails, socketEvent, resp);
+      return resp;
     } catch (error) {
       this.logger.error({
         message: 'Error saving message to Inbox Table',

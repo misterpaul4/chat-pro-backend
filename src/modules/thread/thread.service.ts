@@ -125,7 +125,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     }
 
     // save message
-    await this.inboxService.sendMessage({ ...inbox, thread, sender });
+    await this.inboxService.saveMessage({ ...inbox, thread, sender });
 
     return thread;
   }
@@ -134,7 +134,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     const sender: User = getValue('user');
     await this.threadGuard(sender.id, payload.threadId);
 
-    return this.inboxService.sendMessage({
+    return this.inboxService.saveMessage({
       ...payload,
       sender,
     });

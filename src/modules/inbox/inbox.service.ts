@@ -19,7 +19,7 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
     super(inboxRepo);
   }
 
-  async sendMessage(payload: CreateInboxDto) {
+  async saveMessage(payload: CreateInboxDto) {
     const instance = this.inboxRepo.create(payload);
 
     try {

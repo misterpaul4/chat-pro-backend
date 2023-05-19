@@ -33,10 +33,7 @@ export class UsersGateway
     [key in string]: string;
   } = {};
 
-  constructor(
-    private readonly userService: UsersService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   afterInit(server: Server) {
     this.logger.log('Initialized websocket connection');
@@ -67,10 +64,7 @@ export class UsersGateway
 
     // add to connectedusers
     this.addUser(email, connectionId);
-
     this.logger.log(`Client Connected`, {
-      connectionId,
-      user: email,
       connectedUsers: this.connectedUsers,
     });
   }
@@ -78,7 +72,9 @@ export class UsersGateway
   handleDisconnect(@ConnectedSocket() client: Socket) {
     // remove from connected users
     this.removeUser(client.id);
-    this.logger.log(`Client Disconnected`, client.id);
+    this.logger.log(`Client Disconnected`, {
+      connectedUsers: this.connectedUsers,
+    });
   }
 
   @SubscribeMessage(SocketEvents.SEND_MESSAGE)
@@ -86,15 +82,10 @@ export class UsersGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: string,
   ) {
-    this.logger.log('sendMessage event triggered', {
-      payload,
-      client: client.id,
-    });
-
-    const total = await this.totalConnections();
-    console.log('CONNECTIONS', { total, connectedUsers: this.connectedUsers });
-
-    // this.server.emit(SocketEvents.RECEIVE_MESSAGE, payload);
+    const receiverIds = this.connectedUsers['paul.a@mblhightech.com'] || [];
+    receiverIds.forEach((clientId) =>
+      this.server.to(clientId).emit(SocketEvents.RECEIVE_MESSAGE, payload),
+    );
   }
 
   @SubscribeMessage('typing')

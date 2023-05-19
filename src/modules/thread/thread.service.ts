@@ -126,28 +126,36 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       });
     }
 
-    const recipient = await this.userRepo.findOne({
-      where: { id: receiverId },
-      select: ['email'],
-    });
+    const recipient: string[] = [sender.email];
+
+    if (receiverId !== sender.id) {
+      const resp = await this.userRepo.findOne({
+        where: { id: receiverId },
+        select: ['email', 'id', 'firstName', 'lastName', 'middleName'],
+      });
+      users[1] = resp;
+
+      recipient.push(resp.email);
+    } else {
+      users.pop();
+    }
 
     // save message
-    await this.inboxService.saveMessage(
+    const message = await this.inboxService.saveMessage(
       { ...inbox, thread, sender },
       type === ThreadTypeEnum.Request ? 'request' : 'inbox',
-      [recipient.email],
+      recipient,
     );
 
-    return thread;
+    return { ...thread, messages: [message], users };
   }
 
   async addMessage(payload: CreateInboxDto) {
     const sender: User = getValue('user');
     const resp = await this.threadGuard(sender.id, payload.threadId);
 
-    const recipientEmails: string[] = resp
-      .map((thread) => thread.users_email)
-      .filter((email) => email !== sender.email);
+    const recipientEmails: string[] = resp.map((thread) => thread.users_email);
+    // .filter((email) => email !== sender.email);
 
     return this.inboxService.saveMessage(
       {

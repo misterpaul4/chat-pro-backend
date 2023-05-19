@@ -8,7 +8,7 @@ import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login-auth.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { IJwtPayload } from './dto/jwt-payload';
+import { IJwtPayload, IJwtUser } from './dto/jwt-payload';
 
 @Injectable()
 export class AuthService {
@@ -53,6 +53,10 @@ export class AuthService {
     }
 
     throw new NotFoundException('Unauthorized');
+  }
+
+  verify(payload: string): IJwtUser {
+    return this.jwtService.verify(payload);
   }
 
   private issueToken(payload: IJwtPayload) {

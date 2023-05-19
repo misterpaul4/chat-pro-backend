@@ -31,7 +31,7 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { sender, ...resp } = await this.inboxRepo.save(instance);
+      const { sender, thread, ...resp } = await this.inboxRepo.save(instance);
       this.gatewayService.send(recipientEmails, socketEvent, resp);
       return resp;
     } catch (error) {

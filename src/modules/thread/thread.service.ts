@@ -8,7 +8,7 @@ import {
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Thread } from './entities/thread.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Not, In } from 'typeorm';
 import { CreatePrivateThreadDto } from './dto/create-thread.dto';
 import { InboxService } from '../inbox/inbox.service';
 import { getValue } from 'express-ctx';
@@ -126,45 +126,35 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       });
     }
 
-    const recipient: string[] = [sender.email];
+    const recipient: string[] = [];
 
     if (receiverId !== sender.id) {
       const resp = await this.userRepo.findOne({
         where: { id: receiverId },
         select: ['email', 'id', 'firstName', 'lastName', 'middleName'],
       });
-      users[1] = resp;
-
+      thread.users = [sender, resp];
       recipient.push(resp.email);
     } else {
-      users.pop();
+      thread.users = [sender];
     }
 
-    // save message
-    const message = await this.inboxService.saveMessage(
-      { ...inbox, thread, sender },
-      type === ThreadTypeEnum.Request ? 'request' : 'inbox',
-      recipient,
+    return this.inboxService.saveMessage(
+      thread,
+      {
+        ...inbox,
+        threadId: thread.id,
+        sender,
+      },
+      true,
     );
-
-    return { ...thread, messages: [message], users };
   }
 
   async addMessage(payload: CreateInboxDto) {
     const sender: User = getValue('user');
-    const resp = await this.threadGuard(sender.id, payload.threadId);
+    const thread = await this.threadGuard(sender.id, payload.threadId);
 
-    const recipientEmails: string[] = resp.map((thread) => thread.users_email);
-    // .filter((email) => email !== sender.email);
-
-    return this.inboxService.saveMessage(
-      {
-        ...payload,
-        sender,
-      },
-      'inbox',
-      recipientEmails,
-    );
+    return this.inboxService.saveMessage(thread, { ...payload, sender });
   }
 
   async approveRequest(id: string): Promise<Thread> {
@@ -228,21 +218,30 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     }
   }
 
-  private async threadGuard(userId: string, threadId: string) {
+  private async threadGuard(userId: string, threadId: string): Promise<Thread> {
     try {
-      const resp = await this.dataSource
-        .createQueryBuilder()
-        .from('thread_users_user', 'th')
-        .innerJoinAndSelect('thread', 'thread')
-        .innerJoinAndSelect('thread.users', 'users')
-        .where('th.userId = :userId', { userId })
-        .andWhere('th.threadId = :threadId', { threadId })
-        .andWhere('thread.type != :type', {
-          type: ThreadTypeEnum.Request,
-        })
-        .getRawMany();
+      const resp = await this.threadRepo.findOne({
+        where: {
+          id: threadId,
+          type: Not(ThreadTypeEnum.Request),
+        },
+        relations: ['users'],
+        select: {
+          users: {
+            id: true,
+            email: true,
+          },
+          id: true,
+        },
+      });
 
       if (!resp) {
+        throw new Error();
+      }
+
+      const userInThread = resp.users.find((user) => user.id === userId);
+
+      if (!userInThread) {
         throw new Error();
       }
 

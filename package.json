@@ -32,7 +32,7 @@
     "@nestjs/websockets": "^9.4.1",
     "@nestjsx/crud": "^5.0.0-alpha.3",
     "@nestjsx/crud-typeorm": "^5.0.0-alpha.3",
-    "@types/lodash": "^4.14.194",
+    "lodash@types/": "^4.14.194",
     "@types/passport-jwt": "^3.0.8",
     "bcrypt": "^5.1.0",
     "class-transformer": "^0.5.1",

@@ -114,13 +114,24 @@ export class UsersGateway
   }
 
   send(recipientEmails: string[], event: `${SocketEvents}`, payload: any) {
+    const clients = [];
     recipientEmails.forEach((email) => {
       const socketIds = this.connectedUsers[email];
       if (socketIds) {
         socketIds.forEach((clientId) =>
           this.server.to(clientId).emit(event, payload),
         );
+        clients.push(email);
       }
     });
+    this.logger.log({ message: 'Sent message', clients, event, payload });
+  }
+
+  sendToUser(email: string, event: `${SocketEvents}`, payload: any) {
+    const socketIds = this.connectedUsers[email] || [];
+    socketIds.forEach((clientId) =>
+      this.server.to(clientId).emit(event, payload),
+    );
+    this.logger.log({ message: 'Sent message to USER', event, payload, email });
   }
 }

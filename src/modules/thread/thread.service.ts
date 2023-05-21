@@ -19,6 +19,7 @@ import { ThreadTypeEnum } from './dto/enum';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { CrudRequest } from '@nestjsx/crud';
 import { camelCase, mapKeys } from 'lodash';
+import { UsersGateway } from '../users/users.gateway';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -32,6 +33,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     private userContactListRepo: Repository<UserContactList>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
+    private gatewayService: UsersGateway,
   ) {
     super(threadRepo);
   }
@@ -139,22 +141,32 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       thread.users = [sender];
     }
 
-    return this.inboxService.saveMessage(
-      thread,
-      {
-        ...inbox,
-        threadId: thread.id,
-        sender,
-      },
-      true,
-    );
+    const message = await this.inboxService.saveMessage({
+      ...inbox,
+      threadId: thread.id,
+      sender,
+    });
+
+    const recipientEmails: string[] = thread.users
+      .filter((usr) => usr.id !== sender.id)
+      .map((usr) => usr.email);
+    const socketPayload = { ...thread, messages: [message] };
+    this.gatewayService.send(recipientEmails, 'request', socketPayload);
+    this.gatewayService.sendToUser(sender.email, 'inbox', socketPayload);
+
+    return { message: 'success' };
   }
 
   async addMessage(payload: CreateInboxDto) {
     const sender: User = getValue('user');
     const thread = await this.threadGuard(sender.id, payload.threadId);
 
-    return this.inboxService.saveMessage(thread, { ...payload, sender });
+    const message = await this.inboxService.saveMessage({ ...payload, sender });
+    const recipientEmails: string[] = thread.users.map((usr) => usr.email);
+    const socketPayload = message;
+    this.gatewayService.send(recipientEmails, 'newMessage', socketPayload);
+
+    return { message: 'sent' };
   }
 
   async approveRequest(id: string): Promise<Thread> {

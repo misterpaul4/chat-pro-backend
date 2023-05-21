@@ -7,6 +7,7 @@ import { AuthModule } from '../auth/auth.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { User } from '../users/entities/user.entity';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   controllers: [ThreadController],
@@ -15,6 +16,7 @@ import { User } from '../users/entities/user.entity';
     TypeOrmModule.forFeature([Thread, UserContactList, User]),
     AuthModule,
     InboxModule,
+    UsersModule,
   ],
 })
 export class ThreadModule {}

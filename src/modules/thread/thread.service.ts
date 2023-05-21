@@ -8,7 +8,7 @@ import {
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Thread } from './entities/thread.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Not, In } from 'typeorm';
+import { Repository, DataSource, Not } from 'typeorm';
 import { CreatePrivateThreadDto } from './dto/create-thread.dto';
 import { InboxService } from '../inbox/inbox.service';
 import { getValue } from 'express-ctx';
@@ -18,8 +18,8 @@ import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
 import { ThreadTypeEnum } from './dto/enum';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { CrudRequest } from '@nestjsx/crud';
-import { camelCase, mapKeys } from 'lodash';
 import { UsersGateway } from '../users/users.gateway';
+import { Inbox } from '../inbox/entities/inbox.entity';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -55,7 +55,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     return resp;
   }
 
-  async createThread(payload: CreatePrivateThreadDto) {
+  async createThread(payload: CreatePrivateThreadDto): Promise<Thread> {
     const sender: User = getValue('user');
     const { inbox, receiverId } = payload;
     const users = [sender, { id: receiverId }] as any;
@@ -154,10 +154,10 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     this.gatewayService.send(recipientEmails, 'request', socketPayload);
     this.gatewayService.sendToUser(sender.email, 'inbox', socketPayload);
 
-    return { message: 'success' };
+    return thread;
   }
 
-  async addMessage(payload: CreateInboxDto) {
+  async addMessage(payload: CreateInboxDto): Promise<Inbox> {
     const sender: User = getValue('user');
     const thread = await this.threadGuard(sender.id, payload.threadId);
 
@@ -166,19 +166,16 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     const socketPayload = message;
     this.gatewayService.send(recipientEmails, 'newMessage', socketPayload);
 
-    return { message: 'sent' };
+    return message;
   }
 
   async approveRequest(id: string): Promise<Thread> {
     const currentUser: User = getValue('user');
-    const resp = await this.requestActionGuard(currentUser.id, id);
-    const res = mapKeys(resp, (_, key) =>
-      camelCase(key.replace('thread_', '')),
-    ) as Thread;
+    const thread = await this.threadGuard(currentUser.id, id);
 
     const instance = this.userContactListRepo.create({
       userId: currentUser.id,
-      contactId: res.createdBy,
+      contactId: thread.createdBy,
     });
 
     try {
@@ -187,47 +184,49 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       this.logger.error({ message: 'Error saving contact', payload: instance });
     }
 
-    return this.threadRepo.save({ ...res, type: ThreadTypeEnum.Private });
+    const res = await this.threadRepo.save({
+      ...thread,
+      type: ThreadTypeEnum.Private,
+    });
+
+    const recipientEmails = thread.users
+      .filter((user) => user.id !== currentUser.id)
+      .map((user) => user.email);
+
+    this.gatewayService.send(recipientEmails, 'approvedRequest', thread.id);
+    this.gatewayService.sendToUser(
+      currentUser.email,
+      'approvedRequestUser',
+      thread.id,
+    );
+    return res;
   }
 
-  async declineRequest(id: string) {
+  async declineRequest(id: string): Promise<UserContactList> {
     const currentUser: User = getValue('user');
-    const thread = await this.requestActionGuard(currentUser.id, id);
+    const thread = await this.threadGuard(currentUser.id, id);
     // soft delete thread
     await this.threadRepo.update(id, { deletedAt: new Date() });
     const instance = this.userContactListRepo.create({
       userId: currentUser.id,
-      contactId: thread.thread_createdBy,
+      contactId: thread.createdBy,
       blocked: true,
     });
 
     // block user
-    return this.userContactListRepo.save(instance);
-  }
+    const contact = await this.userContactListRepo.save(instance);
 
-  private async requestActionGuard(userId: string, threadId: string) {
-    try {
-      const resp = await this.dataSource
-        .createQueryBuilder()
-        .from('thread_users_user', 'th')
-        .innerJoinAndSelect('thread', 'thread')
-        .where('th.userId = :userId', { userId })
-        .andWhere('th.threadId = :threadId', { threadId })
-        .andWhere('thread.type = :type', {
-          type: ThreadTypeEnum.Request,
-        })
-        .andWhere('thread.createdBy != :userId', { userId })
-        .getRawOne();
+    const recipientEmails = thread.users
+      .filter((user) => user.id !== currentUser.id)
+      .map((user) => user.email);
 
-      if (!resp) {
-        throw new Error();
-      }
-
-      return resp;
-    } catch (error) {
-      this.logger.error('Thread not found while trying update thread type');
-      throw new BadRequestException('You cannot perform action on this thread');
-    }
+    this.gatewayService.send(recipientEmails, 'approvedRequest', thread.id);
+    this.gatewayService.sendToUser(
+      currentUser.email,
+      'approvedRequestUser',
+      thread.id,
+    );
+    return contact;
   }
 
   private async threadGuard(userId: string, threadId: string): Promise<Thread> {
@@ -259,8 +258,8 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
 
       return resp;
     } catch (error) {
-      this.logger.error('Thread not found while trying to send message');
-      throw new BadRequestException('You cannot send a message to this thread');
+      this.logger.error('Thread not found or unauthorized');
+      throw new BadRequestException('You cannot perform action on this thread');
     }
   }
 }

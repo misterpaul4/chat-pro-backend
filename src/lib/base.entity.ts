@@ -25,13 +25,13 @@ export class BaseEntity {
 }
 export class BaseEntityWithCreators extends BaseEntity {
   @BeforeInsert()
-  updateCreatedBy() {
+  updateCreatedBy?() {
     const user: User = getValue('user');
     this.createdBy = user.id;
   }
 
   @BeforeUpdate()
-  updateUpdatedBy() {
+  updateUpdatedBy?() {
     const user: User = getValue('user');
     this.updatedBy = user.id;
   }

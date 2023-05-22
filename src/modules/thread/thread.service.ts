@@ -171,7 +171,9 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
 
   async approveRequest(id: string): Promise<Thread> {
     const currentUser: User = getValue('user');
-    const thread = await this.threadGuard(currentUser.id, id);
+    const thread = await this.threadGuard(currentUser.id, id, true, [
+      'messages',
+    ]);
 
     const instance = this.userContactListRepo.create({
       userId: currentUser.id,
@@ -184,27 +186,27 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       this.logger.error({ message: 'Error saving contact', payload: instance });
     }
 
-    const res = await this.threadRepo.save({
-      ...thread,
-      type: ThreadTypeEnum.Private,
-    });
+    await this.threadRepo.update(id, { type: ThreadTypeEnum.Private });
 
     const recipientEmails = thread.users
       .filter((user) => user.id !== currentUser.id)
       .map((user) => user.email);
 
-    this.gatewayService.send(recipientEmails, 'approvedRequest', thread.id);
+    const wsPayload = { ...thread, type: ThreadTypeEnum.Private };
+
     this.gatewayService.sendToUser(
       currentUser.email,
-      'approvedRequestUser',
-      thread.id,
+      'approvedRequest',
+      wsPayload,
     );
-    return res;
+    this.gatewayService.send(recipientEmails, 'approvedRequestUser', wsPayload);
+
+    return wsPayload;
   }
 
   async declineRequest(id: string): Promise<UserContactList> {
     const currentUser: User = getValue('user');
-    const thread = await this.threadGuard(currentUser.id, id);
+    const thread = await this.threadGuard(currentUser.id, id, true);
     // soft delete thread
     await this.threadRepo.update(id, { deletedAt: new Date() });
     const instance = this.userContactListRepo.create({
@@ -220,29 +222,40 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       .filter((user) => user.id !== currentUser.id)
       .map((user) => user.email);
 
-    this.gatewayService.send(recipientEmails, 'approvedRequest', thread.id);
+    this.gatewayService.send(recipientEmails, 'rejectedRequestUser', thread.id);
     this.gatewayService.sendToUser(
       currentUser.email,
-      'approvedRequestUser',
+      'rejectedRequest',
       thread.id,
     );
+    // TODO: send notification
     return contact;
   }
 
-  private async threadGuard(userId: string, threadId: string): Promise<Thread> {
+  private async threadGuard(
+    userId: string,
+    threadId: string,
+    actionType = false,
+    relations: string[] = [],
+  ): Promise<Thread> {
     try {
       const resp = await this.threadRepo.findOne({
         where: {
           id: threadId,
-          type: Not(ThreadTypeEnum.Request),
+          type: actionType
+            ? ThreadTypeEnum.Request
+            : Not(ThreadTypeEnum.Request),
         },
-        relations: ['users'],
+        relations: ['users', ...relations],
         select: {
           users: {
             id: true,
             email: true,
+            firstName: true,
+            lastName: true,
           },
           id: true,
+          createdBy: true,
         },
       });
 

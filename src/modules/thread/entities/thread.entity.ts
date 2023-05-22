@@ -24,7 +24,7 @@ export class Thread extends BaseEntityWithCreators {
 
   // thread WITH a code indicates a private chat or a request
   // thread WITHOUT a code indicates a group chat
-  @Column('text', { nullable: true })
+  @Column('text', { nullable: true, unique: true })
   code?: string;
 
   @Column({

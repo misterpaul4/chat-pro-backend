@@ -124,7 +124,12 @@ export class UsersGateway
         clients.push(email);
       }
     });
-    this.logger.log({ message: 'Sent message', clients, event, payload });
+    this.logger.log({
+      message: 'Sent message to RECIPIENTS',
+      clients,
+      event,
+      payload,
+    });
   }
 
   sendToUser(email: string, event: `${SocketEvents}`, payload: any) {

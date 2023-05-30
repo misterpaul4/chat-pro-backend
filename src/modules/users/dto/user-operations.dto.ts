@@ -35,3 +35,11 @@ export class UpdateContactsDto extends UserContactList {
   @IsUUID('4', { each: true })
   contactIds: string[];
 }
+
+export class TypingDto {
+  @IsBoolean()
+  isTyping: boolean;
+
+  @IsUUID()
+  threadId: string;
+}

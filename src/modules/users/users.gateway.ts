@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { SocketEvents } from './enums';
 import { AuthService } from '../auth/auth.service';
+import { TypingDto } from './dto/user-operations.dto';
 
 @WebSocketGateway({
   transports: ['websocket'],
@@ -65,6 +66,7 @@ export class UsersGateway
     this.addUser(email, connectionId);
     this.logger.log(`Client Connected`, {
       connectedUsers: this.connectedUsers,
+      connectedIds: this.connectedIds,
     });
   }
 
@@ -76,13 +78,15 @@ export class UsersGateway
     });
   }
 
-  @SubscribeMessage('typing')
+  @SubscribeMessage(SocketEvents.TYPING)
   async typing(
-    @MessageBody('isTyping') isTyping: boolean,
+    @MessageBody() body: TypingDto,
     @ConnectedSocket() client: Socket,
   ) {
-    this.logger.log('typing event triggered', { isTyping });
-    // client.broadcast.emit('typing', { isTyping });
+    console.log('xx', body, client.id);
+    // get thread users
+    // emit typing message
+    // client.broadcast.emit('typing', body);
   }
 
   private addUser(email: string, id: string) {
@@ -124,12 +128,15 @@ export class UsersGateway
         clients.push(email);
       }
     });
-    this.logger.log({
-      message: 'Sent message to RECIPIENTS',
-      clients,
-      event,
-      payload,
-    });
+
+    if (clients.length) {
+      this.logger.log({
+        message: 'Sent message to multiple users',
+        clients,
+        event,
+        payload,
+      });
+    }
   }
 
   sendToUser(email: string, event: `${SocketEvents}`, payload: any) {
@@ -137,6 +144,13 @@ export class UsersGateway
     socketIds.forEach((clientId) =>
       this.server.to(clientId).emit(event, payload),
     );
-    this.logger.log({ message: 'Sent message to USER', event, payload, email });
+    if (socketIds.length) {
+      this.logger.log({
+        message: 'Sent message to logged in user',
+        event,
+        payload,
+        email,
+      });
+    }
   }
 }

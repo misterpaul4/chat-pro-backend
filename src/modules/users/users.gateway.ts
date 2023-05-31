@@ -16,6 +16,7 @@ import { TypingDto } from './dto/user-operations.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Thread } from '../thread/entities/thread.entity';
 import { Repository } from 'typeorm';
+import { UsersService } from './users.service';
 
 @WebSocketGateway({
   transports: ['websocket'],
@@ -38,7 +39,7 @@ export class UsersGateway
 
   constructor(
     private readonly authService: AuthService,
-    @InjectRepository(Thread) private threadRepo: Repository<Thread>,
+    private readonly userSerive: UsersService,
   ) {}
 
   afterInit(server: Server) {
@@ -89,14 +90,9 @@ export class UsersGateway
     @MessageBody() body: TypingDto,
     @ConnectedSocket() client: Socket,
   ) {
+    const { isTyping, threadId } = body;
     // get thread users
-    const receivers = (
-      await this.threadRepo.findOne({
-        where: { id: body.threadId },
-        relations: ['users'],
-        select: { id: true, users: { id: true, email: true } },
-      })
-    ).users;
+    const receivers = await this.userSerive.getThreadUsers(threadId);
 
     const clientEmail = this.connectedIds[client.id];
 
@@ -105,7 +101,11 @@ export class UsersGateway
       .filter((user) => user.email !== clientEmail)
       .map((user) => user.email);
 
-    this.send(receiversEmail, SocketEvents.TYPING, body.isTyping);
+    this.send(receiversEmail, SocketEvents.TYPING, {
+      isTyping,
+      threadId,
+      clientEmail,
+    });
   }
 
   private addUser(email: string, id: string) {

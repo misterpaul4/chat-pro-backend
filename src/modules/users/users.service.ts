@@ -12,6 +12,7 @@ import { User } from './entities/user.entity';
 import { UserContactList } from './entities/user-contactlist';
 import { UpdateContactsDto } from './dto/user-operations.dto';
 import { getValue } from 'express-ctx';
+import { Thread } from '../thread/entities/thread.entity';
 
 @Injectable()
 export class UsersService extends TypeOrmCrudService<User> {
@@ -21,6 +22,7 @@ export class UsersService extends TypeOrmCrudService<User> {
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(UserContactList)
     private userContactListRepo: Repository<UserContactList>,
+    @InjectRepository(Thread) private threadRepo: Repository<Thread>,
   ) {
     super(userRepo);
   }
@@ -114,5 +116,15 @@ export class UsersService extends TypeOrmCrudService<User> {
         resp.affected > 1 ? 'contacts' : 'contact'
       } updated successfully`,
     };
+  }
+
+  async getThreadUsers(threadId: string): Promise<Partial<User>[]> {
+    return (
+      await this.threadRepo.findOne({
+        where: { id: threadId },
+        relations: ['users'],
+        select: { id: true, users: { id: true, email: true } },
+      })
+    ).users;
   }
 }

@@ -6,7 +6,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { BaseEntity } from 'src/lib/base.entity';
-import { Column, Entity, ManyToMany, OneToMany } from 'typeorm';
+import { Column, Entity, Index, ManyToMany, OneToMany } from 'typeorm';
 import { UserContactList } from './user-contactlist';
 import { Thread } from 'src/modules/thread/entities/thread.entity';
 
@@ -14,6 +14,7 @@ import { Thread } from 'src/modules/thread/entities/thread.entity';
 export class User extends BaseEntity {
   @IsEmail()
   @Column({ unique: true })
+  @Index()
   email: string;
 
   @IsString()

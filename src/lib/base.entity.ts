@@ -6,12 +6,14 @@ import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
 export class BaseEntity {
   @PrimaryGeneratedColumn('uuid')
+  @Index()
   id: string;
 
   @CreateDateColumn({ type: 'timestamptz', nullable: true })

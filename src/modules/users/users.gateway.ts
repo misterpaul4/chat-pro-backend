@@ -13,6 +13,9 @@ import { Logger } from '@nestjs/common';
 import { SocketEvents } from './enums';
 import { AuthService } from '../auth/auth.service';
 import { TypingDto } from './dto/user-operations.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Thread } from '../thread/entities/thread.entity';
+import { Repository } from 'typeorm';
 
 @WebSocketGateway({
   transports: ['websocket'],
@@ -33,7 +36,10 @@ export class UsersGateway
     [key in string]: string;
   } = {};
 
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    @InjectRepository(Thread) private threadRepo: Repository<Thread>,
+  ) {}
 
   afterInit(server: Server) {
     this.logger.log('Initialized websocket connection');
@@ -83,10 +89,23 @@ export class UsersGateway
     @MessageBody() body: TypingDto,
     @ConnectedSocket() client: Socket,
   ) {
-    console.log('xx', body, client.id);
     // get thread users
-    // emit typing message
-    // client.broadcast.emit('typing', body);
+    const receivers = (
+      await this.threadRepo.findOne({
+        where: { id: body.threadId },
+        relations: ['users'],
+        select: { id: true, users: { id: true, email: true } },
+      })
+    ).users;
+
+    const clientEmail = this.connectedIds[client.id];
+
+    // only emails not belonging to current user
+    const receiversEmail = receivers
+      .filter((user) => user.email !== clientEmail)
+      .map((user) => user.email);
+
+    this.send(receiversEmail, SocketEvents.TYPING, body.isTyping);
   }
 
   private addUser(email: string, id: string) {

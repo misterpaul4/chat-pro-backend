@@ -72,9 +72,15 @@ export class UsersGateway
       connectedUsers: this.connectedUsers,
       connectedIds: this.connectedIds,
     });
+
+    // send online status
+    this.sendOnlineStatus(userId, true);
   }
 
   handleDisconnect(@ConnectedSocket() client: Socket) {
+    // send online status
+    this.sendOnlineStatus(this.connectedIds[client.id], false);
+
     // remove from connected users
     this.removeUser(client.id);
     this.logger.log(`Client Disconnected`, {
@@ -168,5 +174,18 @@ export class UsersGateway
         id,
       });
     }
+  }
+
+  async sendOnlineStatus(clientAppId: string, isOnline: boolean) {
+    // get thread users
+    const userContacts = await this.userSerive.getContacts(clientAppId);
+    userContacts.forEach((user) => {
+      const contactSocketIds = this.connectedUsers[user.contactId] || [];
+      contactSocketIds.forEach((ctSocket) =>
+        this.server
+          .to(ctSocket)
+          .emit(SocketEvents.ONLINE_STATUS, { user: clientAppId, isOnline }),
+      );
+    });
   }
 }

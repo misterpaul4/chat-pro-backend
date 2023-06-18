@@ -50,10 +50,13 @@ export class UsersService extends TypeOrmCrudService<User> {
     return { ...result, password: undefined };
   }
 
-  getContacts(currentUser: string) {
+  getContacts(
+    currentUser: string,
+    joinContact = true,
+  ): Promise<UserContactList[]> {
     return this.userContactListRepo.find({
       where: { userId: currentUser },
-      relations: ['contact'],
+      relations: joinContact ? ['contact'] : [],
     });
   }
 

@@ -8,7 +8,7 @@ import {
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Thread } from './entities/thread.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Not } from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { CreatePrivateThreadDto } from './dto/create-thread.dto';
 import { InboxService } from '../inbox/inbox.service';
 import { getValue } from 'express-ctx';

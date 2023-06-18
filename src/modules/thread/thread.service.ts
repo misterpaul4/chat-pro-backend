@@ -28,7 +28,6 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
   constructor(
     @InjectRepository(Thread) private threadRepo: Repository<Thread>,
     private inboxService: InboxService,
-    private dataSource: DataSource,
     @InjectRepository(UserContactList)
     private userContactListRepo: Repository<UserContactList>,
     @InjectRepository(User)

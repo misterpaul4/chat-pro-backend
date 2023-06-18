@@ -93,10 +93,10 @@ export class UsersGateway
 
     const clientId = this.connectedIds[client.id];
 
-    // only emails not belonging to current user
+    // only id not belonging to current user
     const receiverAppId = receivers
-      .filter((user) => user.id !== clientId)
-      .map((user) => user.id);
+      .filter((th) => th.userId !== clientId)
+      .map((th) => th.userId);
 
     this.send(receiverAppId, SocketEvents.TYPING, {
       isTyping,

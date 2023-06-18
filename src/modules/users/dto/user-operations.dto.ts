@@ -43,3 +43,8 @@ export class TypingDto {
   @IsUUID()
   threadId: string;
 }
+
+export interface IThreadUsers {
+  threadId: string;
+  userId: string;
+}

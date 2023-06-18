@@ -176,6 +176,10 @@ export class UsersGateway
     }
   }
 
+  getOnlineContacts(contactList: string[]): string[] {
+    return contactList.filter((contact) => this.connectedUsers[contact]);
+  }
+
   async sendOnlineStatus(clientAppId: string, isOnline: boolean) {
     // get thread users
     const userContacts = await this.userSerive.getContacts(clientAppId);

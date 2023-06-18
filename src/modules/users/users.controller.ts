@@ -23,6 +23,7 @@ import {
 } from './dto/user-operations.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
+import { UsersPresetsService } from './users-presets.service';
 
 @Crud({
   model: {
@@ -52,7 +53,10 @@ import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
 @Controller('users')
 @UseGuards(AuthGuard())
 export class UsersController implements CrudController<User> {
-  constructor(public service: UsersService) {}
+  constructor(
+    public service: UsersService,
+    private presetsService: UsersPresetsService,
+  ) {}
 
   @Get('contacts')
   getContacts(@CurrentUser() user: User) {
@@ -78,5 +82,10 @@ export class UsersController implements CrudController<User> {
   @Patch('mass-update-contacts')
   updateContacts(@Body() body: UpdateContactsDto) {
     return this.service.updateContacts(body);
+  }
+
+  @Get('online-contacts')
+  getOnlineContacts(@CurrentUser() user: User) {
+    return this.presetsService.getOnlineContacts(user.id);
   }
 }

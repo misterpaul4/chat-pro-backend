@@ -6,10 +6,11 @@ import { User } from './entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { UserContactList } from './entities/user-contactlist';
 import { UsersGateway } from './users.gateway';
+import { UsersPresetsService } from './users-presets.service';
 
 @Module({
   controllers: [UsersController],
-  providers: [UsersService, UsersGateway],
+  providers: [UsersService, UsersGateway, UsersPresetsService],
   imports: [
     TypeOrmModule.forFeature([User, UserContactList]),
     forwardRef(() => AuthModule),

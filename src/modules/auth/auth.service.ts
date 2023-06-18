@@ -13,7 +13,7 @@ import { IJwtPayload, IJwtUser } from './dto/jwt-payload';
 @Injectable()
 export class AuthService {
   constructor(
-    private userService: UsersService,
+    private readonly userService: UsersService,
     private jwtService: JwtService,
   ) {}
 

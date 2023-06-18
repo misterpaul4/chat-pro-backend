@@ -13,9 +13,6 @@ import { Logger } from '@nestjs/common';
 import { SocketEvents } from './enums';
 import { AuthService } from '../auth/auth.service';
 import { TypingDto } from './dto/user-operations.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Thread } from '../thread/entities/thread.entity';
-import { Repository } from 'typeorm';
 import { UsersService } from './users.service';
 
 @WebSocketGateway({
@@ -58,10 +55,10 @@ export class UsersGateway
       return;
     }
 
-    let email: string;
+    let userId: string;
 
     try {
-      email = this.authService.verify(token).email;
+      userId = this.authService.verify(token).id;
     } catch (error) {
       this.logger.warn('Client has invalid token');
       // REJECT CONNECTION
@@ -70,7 +67,7 @@ export class UsersGateway
     }
 
     // add to connectedusers
-    this.addUser(email, connectionId);
+    this.addUser(userId, connectionId);
     this.logger.log(`Client Connected`, {
       connectedUsers: this.connectedUsers,
       connectedIds: this.connectedIds,
@@ -94,38 +91,38 @@ export class UsersGateway
     // get thread users
     const receivers = await this.userSerive.getThreadUsers(threadId);
 
-    const clientEmail = this.connectedIds[client.id];
+    const clientId = this.connectedIds[client.id];
 
     // only emails not belonging to current user
-    const receiversEmail = receivers
-      .filter((user) => user.email !== clientEmail)
-      .map((user) => user.email);
+    const receiverAppId = receivers
+      .filter((user) => user.id !== clientId)
+      .map((user) => user.id);
 
-    this.send(receiversEmail, SocketEvents.TYPING, {
+    this.send(receiverAppId, SocketEvents.TYPING, {
       isTyping,
       threadId,
-      clientEmail,
+      clientId,
     });
   }
 
-  private addUser(email: string, id: string) {
-    if (this.connectedUsers[email]) {
-      this.connectedUsers[email].push(id);
+  private addUser(clientAppId: string, id: string) {
+    if (this.connectedUsers[clientAppId]) {
+      this.connectedUsers[clientAppId].push(id);
     } else {
-      this.connectedUsers[email] = [id];
+      this.connectedUsers[clientAppId] = [id];
     }
 
-    this.connectedIds[id] = email;
+    this.connectedIds[id] = clientAppId;
   }
 
   private removeUser(id: string) {
-    const email = this.connectedIds[id];
-    this.connectedUsers[email] = this.connectedUsers[email].filter(
+    const clientAppId = this.connectedIds[id];
+    this.connectedUsers[clientAppId] = this.connectedUsers[clientAppId].filter(
       (c) => c !== id,
     );
 
-    if (!this.connectedUsers[email].length) {
-      delete this.connectedUsers[email];
+    if (!this.connectedUsers[clientAppId].length) {
+      delete this.connectedUsers[clientAppId];
     }
 
     delete this.connectedIds[id];
@@ -136,15 +133,15 @@ export class UsersGateway
     return sockets.length;
   }
 
-  send(recipientEmails: string[], event: `${SocketEvents}`, payload: any) {
+  send(recipientAppIds: string[], event: `${SocketEvents}`, payload: any) {
     const clients = [];
-    recipientEmails.forEach((email) => {
-      const socketIds = this.connectedUsers[email];
+    recipientAppIds.forEach((id) => {
+      const socketIds = this.connectedUsers[id];
       if (socketIds) {
         socketIds.forEach((clientId) =>
           this.server.to(clientId).emit(event, payload),
         );
-        clients.push(email);
+        clients.push(id);
       }
     });
 
@@ -158,8 +155,8 @@ export class UsersGateway
     }
   }
 
-  sendToUser(email: string, event: `${SocketEvents}`, payload: any) {
-    const socketIds = this.connectedUsers[email] || [];
+  sendToUser(id: string, event: `${SocketEvents}`, payload: any) {
+    const socketIds = this.connectedUsers[id] || [];
     socketIds.forEach((clientId) =>
       this.server.to(clientId).emit(event, payload),
     );
@@ -168,7 +165,7 @@ export class UsersGateway
         message: 'Sent message to logged in user',
         event,
         payload,
-        email,
+        id,
       });
     }
   }

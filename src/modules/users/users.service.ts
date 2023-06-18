@@ -123,7 +123,7 @@ export class UsersService extends TypeOrmCrudService<User> {
       await this.threadRepo.findOne({
         where: { id: threadId },
         relations: ['users'],
-        select: { id: true, users: { id: true, email: true } },
+        select: { id: true, users: { id: true } },
       })
     ).users;
   }

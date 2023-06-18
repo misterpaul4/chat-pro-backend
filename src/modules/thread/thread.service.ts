@@ -147,11 +147,11 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       sender,
     });
 
-    const recipientEmails: string[] = thread.users
+    const recipientIds: string[] = thread.users
       .filter((usr) => usr.id !== sender.id)
-      .map((usr) => usr.email);
+      .map((usr) => usr.id);
     const socketPayload = { ...thread, messages: [message] };
-    this.gatewayService.send(recipientEmails, 'request', socketPayload);
+    this.gatewayService.send(recipientIds, 'request', socketPayload);
     this.gatewayService.sendToUser(sender.email, 'inbox', socketPayload);
 
     return thread;
@@ -162,9 +162,9 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     const thread = await this.threadGuard(sender.id, payload.threadId);
 
     const message = await this.inboxService.saveMessage({ ...payload, sender });
-    const recipientEmails: string[] = thread.users.map((usr) => usr.email);
+    const recipientIds: string[] = thread.users.map((usr) => usr.id);
     const socketPayload = message;
-    this.gatewayService.send(recipientEmails, 'newMessage', socketPayload);
+    this.gatewayService.send(recipientIds, 'newMessage', socketPayload);
 
     return message;
   }
@@ -188,18 +188,18 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
 
     await this.threadRepo.update(id, { type: ThreadTypeEnum.Private });
 
-    const recipientEmails = thread.users
+    const recipientIds = thread.users
       .filter((user) => user.id !== currentUser.id)
-      .map((user) => user.email);
+      .map((user) => user.id);
 
     const wsPayload = { ...thread, type: ThreadTypeEnum.Private };
 
     this.gatewayService.sendToUser(
-      currentUser.email,
+      currentUser.id,
       'approvedRequest',
       wsPayload,
     );
-    this.gatewayService.send(recipientEmails, 'approvedRequestUser', wsPayload);
+    this.gatewayService.send(recipientIds, 'approvedRequestUser', wsPayload);
 
     return wsPayload;
   }
@@ -218,11 +218,11 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     // block user
     const contact = await this.userContactListRepo.save(instance);
 
-    const recipientEmails = thread.users
+    const recipientIds = thread.users
       .filter((user) => user.id !== currentUser.id)
-      .map((user) => user.email);
+      .map((user) => user.id);
 
-    this.gatewayService.send(recipientEmails, 'rejectedRequestUser', thread.id);
+    this.gatewayService.send(recipientIds, 'rejectedRequestUser', thread.id);
     this.gatewayService.sendToUser(
       currentUser.email,
       'rejectedRequest',

@@ -7,7 +7,6 @@ import { CreateInboxDto } from './dto/create-inbox.dto';
 import { UsersService } from '../users/users.service';
 import { CrudRequest } from '@nestjsx/crud';
 import { User } from '../users/entities/user.entity';
-import { UsersGateway } from '../users/users.gateway';
 
 @Injectable()
 export class InboxService extends TypeOrmCrudService<Inbox> {
@@ -16,7 +15,6 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
   constructor(
     @InjectRepository(Inbox) private inboxRepo: Repository<Inbox>,
     private readonly userService: UsersService,
-    private readonly gatewayService: UsersGateway,
   ) {
     super(inboxRepo);
   }

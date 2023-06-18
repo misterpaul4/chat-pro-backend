@@ -41,6 +41,7 @@ export class AuthService {
       if (validPassword) {
         const token = await this.issueToken({
           email: user.email,
+          id: user.id,
         });
         const { id, firstName, lastName, middleName, email } = user;
         return {

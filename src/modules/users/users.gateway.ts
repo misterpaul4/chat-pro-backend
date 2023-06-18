@@ -150,15 +150,6 @@ export class UsersGateway
         clients.push(id);
       }
     });
-
-    if (clients.length) {
-      this.logger.log({
-        message: 'Sent message to multiple users',
-        clients,
-        event,
-        payload,
-      });
-    }
   }
 
   sendToUser(id: string, event: `${SocketEvents}`, payload: any) {
@@ -166,14 +157,6 @@ export class UsersGateway
     socketIds.forEach((clientId) =>
       this.server.to(clientId).emit(event, payload),
     );
-    if (socketIds.length) {
-      this.logger.log({
-        message: 'Sent message to logged in user',
-        event,
-        payload,
-        id,
-      });
-    }
   }
 
   getOnlineContacts(contactList: string[]): string[] {

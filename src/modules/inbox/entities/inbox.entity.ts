@@ -4,6 +4,7 @@ import { BaseEntity } from 'src/lib/base.entity';
 import { Thread } from 'src/modules/thread/entities/thread.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 import { BeforeInsert, Column, Entity, ManyToOne } from 'typeorm';
+import { IMessageReply } from '../dto/index.dto';
 
 @Entity()
 export class Inbox extends BaseEntity {
@@ -22,10 +23,12 @@ export class Inbox extends BaseEntity {
   @Column()
   senderId: string;
 
-  @IsString()
+  @Column({ nullable: true, type: 'simple-json' })
+  replyingTo?: IMessageReply;
+
   @IsOptional()
-  @Column({ nullable: true })
-  replyingTo?: string;
+  @IsUUID()
+  reply?: string;
 
   @Column({ type: 'simple-array' })
   readBy: string[];

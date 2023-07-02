@@ -7,7 +7,6 @@ import { CreateInboxDto } from './dto/create-inbox.dto';
 import { UsersService } from '../users/users.service';
 import { CrudRequest } from '@nestjsx/crud';
 import { User } from '../users/entities/user.entity';
-import { getValue } from 'express-ctx';
 
 @Injectable()
 export class InboxService extends TypeOrmCrudService<Inbox> {
@@ -22,8 +21,6 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
 
   async saveMessage(payload: CreateInboxDto) {
     if (payload.reply) {
-      const currentUserId = getValue('user').id;
-
       const inbox = await this.inboxRepo.findOne({
         where: { id: payload.reply },
         relations: ['sender'],
@@ -37,9 +34,9 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
       if (inbox) {
         payload.replyingTo = {
           message: inbox.message,
-          sender:
-            currentUserId === inbox.sender.id ? 'You' : inbox.sender.firstName,
+          sender: inbox.sender.firstName,
           id: inbox.id,
+          senderId: inbox.sender.id,
         };
       }
     }

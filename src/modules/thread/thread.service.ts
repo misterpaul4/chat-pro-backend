@@ -19,7 +19,7 @@ import { ThreadTypeEnum } from './dto/enum';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { CrudRequest } from '@nestjsx/crud';
 import { UsersGateway } from '../users/users.gateway';
-import { Inbox } from '../inbox/entities/inbox.entity';
+import { ReadMessage } from './dto/message.dto';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -135,7 +135,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
         select: ['email', 'id', 'firstName', 'lastName', 'middleName'],
       });
       thread.users = [sender, resp];
-      recipient.push(resp.email);
+      recipient.push(resp.id);
     } else {
       thread.users = [sender];
     }
@@ -151,18 +151,21 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       .map((usr) => usr.id);
     const socketPayload = { ...thread, messages: [message] };
     this.gatewayService.send(recipientIds, 'request', socketPayload);
-    this.gatewayService.sendToUser(sender.email, 'inbox', socketPayload);
+    this.gatewayService.sendToUser(sender.id, 'inbox', socketPayload);
 
     return thread;
   }
 
-  async addMessage(payload: CreateInboxDto): Promise<Inbox> {
+  async addMessage(payload: CreateInboxDto): Promise<any> {
     const sender: User = getValue('user');
     const thread = await this.threadGuard(sender.id, payload.threadId);
 
     const message = await this.inboxService.saveMessage({ ...payload, sender });
+
+    const unreadCountByUsers = await this.updateThreadReadCount(sender, thread);
+
     const recipientIds: string[] = thread.users.map((usr) => usr.id);
-    const socketPayload = message;
+    const socketPayload = { message, unreadCountByUsers };
     this.gatewayService.send(recipientIds, 'newMessage', socketPayload);
 
     return message;
@@ -223,12 +226,28 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
 
     this.gatewayService.send(recipientIds, 'rejectedRequestUser', thread.id);
     this.gatewayService.sendToUser(
-      currentUser.email,
+      currentUser.id,
       'rejectedRequest',
       thread.id,
     );
     // TODO: send notification
     return contact;
+  }
+
+  async readMessage(threadId: ReadMessage['threadId']) {
+    const user: User = getValue('user');
+    const thread = await this.threadRepo.findOne({
+      where: { id: threadId },
+      select: ['id', 'unreadCountByUsers'],
+    });
+
+    if (!thread) {
+      throw new BadRequestException('Thread not found');
+    }
+
+    await this.threadRepo.update(threadId, {
+      unreadCountByUsers: { ...thread.unreadCountByUsers, [user.id]: 0 },
+    });
   }
 
   private async threadGuard(
@@ -255,6 +274,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
           },
           id: true,
           createdBy: true,
+          unreadCountByUsers: {},
         },
       });
 
@@ -273,5 +293,23 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       this.logger.error('Thread not found or unauthorized');
       throw new BadRequestException('You cannot perform action on this thread');
     }
+  }
+
+  private async updateThreadReadCount(
+    sender: User,
+    thread: Thread,
+  ): Promise<Thread['unreadCountByUsers']> {
+    const threadReadCount = { ...thread.unreadCountByUsers };
+
+    thread.users.forEach((user) => {
+      threadReadCount[user.id] = (threadReadCount[user.id] ?? 0) + 1;
+    });
+
+    threadReadCount[sender.id] = 0;
+    await this.threadRepo.update(thread.id, {
+      unreadCountByUsers: threadReadCount,
+    });
+
+    return threadReadCount;
   }
 }

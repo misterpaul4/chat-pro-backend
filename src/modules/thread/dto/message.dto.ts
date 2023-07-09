@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEmpty, IsObject, ValidateNested } from 'class-validator';
+import { IsEmpty, IsObject, IsUUID, ValidateNested } from 'class-validator';
 import { CreateInboxDto } from 'src/modules/inbox/dto/create-inbox.dto';
 import { IMessageReply } from 'src/modules/inbox/dto/index.dto';
 
@@ -16,4 +16,9 @@ export class MessageDto {
   @ValidateNested()
   @Type(() => IInboxDto)
   inbox: IInboxDto;
+}
+
+export class ReadMessage {
+  @IsUUID('4')
+  threadId: string;
 }

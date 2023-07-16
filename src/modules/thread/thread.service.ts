@@ -248,6 +248,13 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     await this.threadRepo.update(threadId, {
       unreadCountByUsers: { ...thread.unreadCountByUsers, [user.id]: 0 },
     });
+
+    this.gatewayService.sendToUser(user.id, 'readMessage', {
+      threadId,
+      userId: user.id,
+    });
+
+    return true;
   }
 
   private async threadGuard(

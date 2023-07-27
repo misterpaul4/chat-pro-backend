@@ -12,7 +12,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user-decorator';
-import { LoginDto } from './dto/login-auth.dto';
+import { ForgotPasswordDto, LoginDto } from './dto/login-auth.dto';
 
 @Controller('auth')
 @UseFilters(HttpExceptionFilter)
@@ -27,6 +27,11 @@ export class AuthController {
   @Post('login')
   login(@Body() body: LoginDto) {
     return this.authService.login(body);
+  }
+
+  @Post('forgot-password')
+  forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.authService.forgotPassword(body.email);
   }
 
   @Get('get-self')

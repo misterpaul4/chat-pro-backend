@@ -5,6 +5,7 @@ import {
   Post,
   UseFilters,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { HttpExceptionFilter } from 'src/lib/http-exception.filter';
@@ -12,7 +13,17 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user-decorator';
-import { ForgotPasswordDto, LoginDto } from './dto/login-auth.dto';
+import {
+  ForgotPasswordDto,
+  LoginDto,
+  PasswordResetCode,
+  ResetPasswordDto,
+} from './dto/login-auth.dto';
+import {
+  CrudRequest,
+  CrudRequestInterceptor,
+  ParsedRequest,
+} from '@nestjsx/crud';
 
 @Controller('auth')
 @UseFilters(HttpExceptionFilter)
@@ -30,8 +41,19 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @UseInterceptors(CrudRequestInterceptor)
   forgotPassword(@Body() body: ForgotPasswordDto) {
     return this.authService.forgotPassword(body.email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() body: ResetPasswordDto) {
+    return this.authService.resetPassword(body.password);
+  }
+
+  @Post('verify-password-reset-code')
+  verifyPasswordResetCode(@Body() body: PasswordResetCode) {
+    return this.authService.verifyPasswordResetCode(body);
   }
 
   @Get('get-self')

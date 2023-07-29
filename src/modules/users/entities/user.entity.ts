@@ -38,6 +38,12 @@ export class User extends BaseEntity {
   @IsOptional()
   middleName: string;
 
+  @Column({ nullable: true })
+  verifCode: string;
+
+  @Column({ nullable: true, type: 'timestamptz' })
+  verifCodeCreatedAt: Date;
+
   @OneToMany(() => UserContactList, (contacts) => contacts.user)
   contacts: UserContactList[];
 

@@ -12,8 +12,6 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { IJwtPayload, IJwtUser } from './dto/jwt-payload';
 import { MailService } from '../mail/mail.service';
-import { getValue } from 'express-ctx';
-import { User } from '../users/entities/user.entity';
 import { generateRandomNumber } from 'src/utils/string';
 
 @Injectable()
@@ -97,7 +95,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException('Email not found');
+      throw new NotFoundException('User not found');
     }
 
     const verificationCode = generateRandomNumber(6);
@@ -115,20 +113,28 @@ export class AuthService {
       <p>
       The verification code for your request is <strong>${verificationCode}</strong>
       </p>
-      <small>
+      <p>
       If you did not initiate this password reset request, please disregard this email. Your account remains secure, and no changes have been made
-    </small>
+    </p>
   </div>`;
 
     // send password reset email
-    await this.mailService.sendMail({
-      to: email,
-      from: process.env.MAIL_CRED_EMAIL,
-      subject: 'Password Reset Request',
-      html: emailContent,
-    });
+    try {
+      await this.mailService.sendMail({
+        to: email,
+        from: process.env.MAIL_CRED_EMAIL,
+        subject: 'Password Reset Request',
+        html: emailContent,
+      });
+    } catch (error) {
+      await this.userService.updateSingleUser(user.id, {
+        verifCode: null,
+      });
 
-    return user.id;
+      throw new BadRequestException('Your request could not be completed');
+    }
+
+    return { id: user.id };
   }
 
   verify(payload: string): IJwtUser {

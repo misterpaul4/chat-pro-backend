@@ -19,11 +19,7 @@ import {
   PasswordResetCode,
   ResetPasswordDto,
 } from './dto/login-auth.dto';
-import {
-  CrudRequest,
-  CrudRequestInterceptor,
-  ParsedRequest,
-} from '@nestjsx/crud';
+import { CrudRequestInterceptor } from '@nestjsx/crud';
 
 @Controller('auth')
 @UseFilters(HttpExceptionFilter)

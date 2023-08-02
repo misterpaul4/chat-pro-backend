@@ -70,7 +70,11 @@ export class AuthService {
     const salt = await bcrypt.genSalt();
     password = await bcrypt.hash(password, salt);
 
-    await this.userService.updateSingleUser(id, { password });
+    await this.userService.updateSingleUser(id, {
+      password,
+      verifCode: null,
+      verifCodeCreatedAt: null,
+    });
 
     const token = await this.issueToken({
       email: user.email,

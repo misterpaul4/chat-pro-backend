@@ -63,20 +63,21 @@ export class AuthService {
     throw new NotFoundException('Unauthorized');
   }
 
-  async resetPassword(password: string) {
-    //
+  async resetPassword(password: string, code: string, id: string) {
+    await this.verifyPasswordResetCode({ code, id });
+
+    const salt = await bcrypt.genSalt();
+    password = await bcrypt.hash(password, salt);
+
+    return this.userService.updateSingleUser(id, { password });
   }
 
   async verifyPasswordResetCode(param: PasswordResetCode) {
     const { code, id } = param;
     const user = await this.userService.findOne({
-      where: { id, verifCode: code },
+      where: { id },
       select: ['id', 'verifCode', 'verifCodeCreatedAt'],
     });
-
-    if (!user) {
-      throw new BadRequestException('Invalid Request');
-    }
 
     // check if code is still valid
     const date = new Date(user.verifCodeCreatedAt);
@@ -84,7 +85,15 @@ export class AuthService {
     const timeDifference = now.getTime() - date.getTime();
     const oneHourInMilliseconds = 60 * 60 * 1000;
 
-    return timeDifference < oneHourInMilliseconds;
+    if (!user || timeDifference > oneHourInMilliseconds) {
+      throw new BadRequestException('Invalid Request');
+    }
+
+    if (user.verifCode !== code) {
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    return { message: 'success' };
   }
 
   async forgotPassword(email: string) {

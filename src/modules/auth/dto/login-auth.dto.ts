@@ -5,11 +5,6 @@ export class ForgotPasswordDto {
   email: string;
 }
 
-export class ResetPasswordDto {
-  @IsString()
-  password: string;
-}
-
 export class LoginDto extends ForgotPasswordDto {
   @IsString()
   password: string;
@@ -22,4 +17,9 @@ export class PasswordResetCode {
 
   @IsUUID()
   id: string;
+}
+
+export class ResetPasswordDto extends PasswordResetCode {
+  @IsString()
+  password: string;
 }

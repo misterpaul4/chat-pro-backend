@@ -13,6 +13,7 @@ import { JwtService } from '@nestjs/jwt';
 import { IJwtPayload, IJwtUser } from './dto/jwt-payload';
 import { MailService } from '../mail/mail.service';
 import { generateRandomNumber } from 'src/utils/string';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -64,19 +65,30 @@ export class AuthService {
   }
 
   async resetPassword(password: string, code: string, id: string) {
-    await this.verifyPasswordResetCode({ code, id });
+    const user = await this.verifyPasswordResetCode({ code, id });
 
     const salt = await bcrypt.genSalt();
     password = await bcrypt.hash(password, salt);
 
-    return this.userService.updateSingleUser(id, { password });
+    await this.userService.updateSingleUser(id, { password });
+
+    const token = await this.issueToken({
+      email: user.email,
+      id,
+    });
+
+    const { firstName, lastName, middleName, email } = user;
+
+    return {
+      token,
+      user: { id, firstName, lastName, middleName, email },
+    };
   }
 
-  async verifyPasswordResetCode(param: PasswordResetCode) {
+  async verifyPasswordResetCode(param: PasswordResetCode): Promise<User> {
     const { code, id } = param;
     const user = await this.userService.findOne({
       where: { id },
-      select: ['id', 'verifCode', 'verifCodeCreatedAt'],
     });
 
     // check if code is still valid
@@ -93,7 +105,12 @@ export class AuthService {
       throw new BadRequestException('Invalid verification code');
     }
 
-    return { message: 'success' };
+    return {
+      ...user,
+      password: undefined,
+      verifCode: undefined,
+      verifCodeCreatedAt: undefined,
+    };
   }
 
   async forgotPassword(email: string) {

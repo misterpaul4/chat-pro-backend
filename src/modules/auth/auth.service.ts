@@ -116,7 +116,7 @@ export class AuthService {
 
     const emailContent = `<div>
     <p>
-      We have received a request to reset your password associated with your account.
+      We have received a request to reset the password associated with your account.
       </p>
 
       <p>

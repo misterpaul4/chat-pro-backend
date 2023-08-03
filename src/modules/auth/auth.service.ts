@@ -144,7 +144,7 @@ export class AuthService {
       The verification code for your request is <strong>${verificationCode}</strong>
       </p>
       <p>
-      If you did not initiate this password reset request, please disregard this email. Your account remains secure, and no changes have been made
+      If you did not initiate this request, please disregard this email. Your account remains secure, and no changes have been made
     </p>
   </div>`;
 

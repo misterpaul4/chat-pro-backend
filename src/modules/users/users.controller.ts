@@ -7,12 +7,20 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
   UsePipes,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { Crud, CrudController } from '@nestjsx/crud';
+import {
+  Crud,
+  CrudController,
+  CrudRequest,
+  CrudRequestInterceptor,
+  Override,
+  ParsedRequest,
+} from '@nestjsx/crud';
 import { User } from './entities/user.entity';
-import { excludeAllRoutes, generalCrudOptions } from 'src/utils/crud';
+import { generalCrudOptions } from 'src/utils/crud';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../auth/current-user-decorator';
@@ -24,6 +32,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
 import { UsersPresetsService } from './users-presets.service';
+import { ResourceGuard } from './user-resource.guard';
 
 @Crud({
   model: {
@@ -31,7 +40,7 @@ import { UsersPresetsService } from './users-presets.service';
   },
   ...generalCrudOptions,
   dto: { create: CreateUserDto, update: UpdateUserDto },
-  routes: excludeAllRoutes,
+  routes: { only: ['updateOneBase'] },
   query: {
     ...generalCrudOptions.query,
     exclude: ['password'],
@@ -57,6 +66,16 @@ export class UsersController implements CrudController<User> {
     public service: UsersService,
     private presetsService: UsersPresetsService,
   ) {}
+
+  @Override('updateOneBase')
+  @UseInterceptors(CrudRequestInterceptor)
+  @UseGuards(ResourceGuard)
+  updateOne(
+    @ParsedRequest() req: CrudRequest,
+    @Body() dto: UpdateUserDto,
+  ): Promise<User> {
+    return this.service.updateOne(req, dto);
+  }
 
   @Get('contacts')
   getContacts(@CurrentUser() user: User) {

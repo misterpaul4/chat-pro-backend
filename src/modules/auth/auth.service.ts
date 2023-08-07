@@ -14,6 +14,8 @@ import { IJwtPayload, IJwtUser } from './dto/jwt-payload';
 import { MailService } from '../mail/mail.service';
 import { generateRandomNumber } from 'src/utils/string';
 import { User } from '../users/entities/user.entity';
+import { EmailChangeDto } from './dto/index.dto';
+import { getValue } from 'express-ctx';
 
 @Injectable()
 export class AuthService {
@@ -165,6 +167,26 @@ export class AuthService {
     }
 
     return { id: user.id };
+  }
+
+  async changeEmail(payload: EmailChangeDto) {
+    const user: User = getValue('user');
+
+    if (user.email.toLowerCase() === payload.email.toLowerCase()) {
+      throw new BadRequestException(
+        'New email cannot be same as current email',
+      );
+    }
+
+    await this.verifyPasswordResetCode({
+      code: payload.code,
+      id: user.id,
+    });
+
+    return this.userService.updateSingleUser(user.id, {
+      email: payload.email,
+      lastEmailChangeDate: new Date(),
+    });
   }
 
   verify(payload: string): IJwtUser {

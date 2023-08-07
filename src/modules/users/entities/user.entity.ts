@@ -17,6 +17,9 @@ export class User extends BaseEntity {
   @Index()
   email: string;
 
+  @Column({ nullable: true, type: 'timestamptz' })
+  lastEmailChangeDate: Date;
+
   @IsString()
   @MinLength(8)
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {

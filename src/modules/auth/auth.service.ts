@@ -119,6 +119,38 @@ export class AuthService {
     };
   }
 
+  async sendEmailCode(
+    getEmailContent: (code: number) => string,
+    email: string,
+    userId: string,
+  ) {
+    const verificationCode = generateRandomNumber(6);
+
+    const content = getEmailContent(verificationCode);
+
+    try {
+      await this.mailService.sendMail({
+        to: email,
+        from: process.env.MAIL_CRED_EMAIL,
+        subject: 'Password Reset Request',
+        html: content,
+      });
+
+      const update = await this.userService.updateSingleUser(userId, {
+        verifCode: verificationCode.toString(),
+        verifCodeCreatedAt: new Date(),
+      });
+
+      return update;
+    } catch (error) {
+      await this.userService.updateSingleUser(userId, {
+        verifCode: null,
+      });
+
+      throw new BadRequestException('Your request could not be completed');
+    }
+  }
+
   async forgotPassword(email: string) {
     const user = await this.userService.findOne({
       where: {
@@ -130,16 +162,10 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    const verificationCode = generateRandomNumber(6);
-
-    await this.userService.updateSingleUser(user.id, {
-      verifCode: verificationCode.toString(),
-      verifCodeCreatedAt: new Date(),
-    });
-
-    const emailContent = `<div>
+    await this.sendEmailCode(
+      (verificationCode) => `<div>
     <p>
-      We have received a request to reset the password associated with your account.
+      Hi ${user.firstName}, We have received a request to reset the password associated with your account.
       </p>
 
       <p>
@@ -148,28 +174,39 @@ export class AuthService {
       <p>
       If you did not initiate this request, please disregard this email. Your account remains secure, and no changes have been made
     </p>
-  </div>`;
-
-    // send password reset email
-    try {
-      await this.mailService.sendMail({
-        to: email,
-        from: process.env.MAIL_CRED_EMAIL,
-        subject: 'Password Reset Request',
-        html: emailContent,
-      });
-    } catch (error) {
-      await this.userService.updateSingleUser(user.id, {
-        verifCode: null,
-      });
-
-      throw new BadRequestException('Your request could not be completed');
-    }
+  </div>`,
+      user.email,
+      user.id,
+    );
 
     return { id: user.id };
   }
 
-  async changeEmail(payload: EmailChangeDto) {
+  async changeEmailStep1() {
+    const user: User = getValue('user');
+
+    const emailChangeContent = (code: number) => `<div>
+    <p>
+     Hi Joe, We have received a request to change the email address associated with your account. To ensure the security of your account, we require a verification step to complete this process.
+    </p>
+
+   <p>
+   Please find below a 6-digit verification code that you will need to enter in the app to verify your email change:
+   </p>
+
+   <p>
+   Verification Code: <strong>${code}</strong>
+   </p>
+
+   <p>
+     <em>If you did not initiate this email change request, please disregard this email and ensure the security of your account by changing your password immediately.</em>
+   </p>
+   </div>`;
+
+    return this.sendEmailCode(emailChangeContent, user.email, user.id);
+  }
+
+  async changeEmailStep2(payload: EmailChangeDto) {
     const user: User = getValue('user');
 
     if (user.email.toLowerCase() === payload.email.toLowerCase()) {

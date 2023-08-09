@@ -48,10 +48,16 @@ export class AuthController {
     return this.authService.resetPassword(body.password, body.code, body.id);
   }
 
+  @Post('email-change-request')
   @UseGuards(AuthGuard())
-  @Post('change-email')
+  changeEmailRequest() {
+    return this.authService.changeEmailStep1();
+  }
+
+  @Post('email-change-submit')
+  @UseGuards(AuthGuard())
   changeEmail(@Body() body: EmailChangeDto) {
-    return this.authService.changeEmail(body);
+    return this.authService.changeEmailStep2(body);
   }
 
   @Post('verify-password-reset-code')

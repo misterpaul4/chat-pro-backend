@@ -8,3 +8,8 @@ export class EmailChangeDto {
   @Length(6, 6)
   code: string;
 }
+
+export class EmailChangeRequestDto {
+  @IsEmail()
+  email: string;
+}

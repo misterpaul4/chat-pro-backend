@@ -120,19 +120,19 @@ export class AuthService {
   }
 
   async sendEmailCode(
-    getEmailContent: (code: number) => string,
+    getEmailContent: (code: number) => [string, string],
     email: string,
     userId: string,
   ) {
     const verificationCode = generateRandomNumber(6);
 
-    const content = getEmailContent(verificationCode);
+    const [subject, content] = getEmailContent(verificationCode);
 
     try {
       await this.mailService.sendMail({
         to: email,
         from: process.env.MAIL_CRED_EMAIL,
-        subject: 'Password Reset Request',
+        subject,
         html: content,
       });
 
@@ -163,18 +163,21 @@ export class AuthService {
     }
 
     await this.sendEmailCode(
-      (verificationCode) => `<div>
-    <p>
-      Hi ${user.firstName}, We have received a request to reset the password associated with your account.
-      </p>
+      (verificationCode) => [
+        'Password Reset Request',
+        `<div>
+      <p>
+        Hi ${user.firstName}, We have received a request to reset the password associated with your account.
+        </p>
 
-      <p>
-      The verification code for your request is <strong>${verificationCode}</strong>
+        <p>
+        The verification code for your request is <strong>${verificationCode}</strong>
+        </p>
+        <p>
+        If you did not initiate this request, please disregard this email. Your account remains secure, and no changes have been made
       </p>
-      <p>
-      If you did not initiate this request, please disregard this email. Your account remains secure, and no changes have been made
-    </p>
-  </div>`,
+    </div>`,
+      ],
       user.email,
       user.id,
     );
@@ -182,12 +185,21 @@ export class AuthService {
     return { id: user.id };
   }
 
-  async changeEmailStep1() {
+  async changeEmailStep1(email: string) {
     const user: User = getValue('user');
 
-    const emailChangeContent = (code: number) => `<div>
+    const emailExist = await this.userService.findOne({ where: { email } });
+
+    if (emailExist) {
+      throw new BadRequestException('This email cannot be used');
+    }
+
+    const resp = await this.sendEmailCode(
+      (code: number) => [
+        'Email Change Request',
+        `<div>
     <p>
-     Hi Joe, We have received a request to change the email address associated with your account. To ensure the security of your account, we require a verification step to complete this process.
+     Hi ${user.firstName}, We have received a request to change the email address associated with your account. To ensure the security of your account, we require a verification step to complete this process.
     </p>
 
    <p>
@@ -201,29 +213,33 @@ export class AuthService {
    <p>
      <em>If you did not initiate this email change request, please disregard this email and ensure the security of your account by changing your password immediately.</em>
    </p>
-   </div>`;
+   </div>`,
+      ],
+      email,
+      user.id,
+    );
 
-    return this.sendEmailCode(emailChangeContent, user.email, user.id);
+    if (!resp) {
+      throw new BadRequestException('Request not completed');
+    }
+
+    return { email };
   }
 
   async changeEmailStep2(payload: EmailChangeDto) {
     const user: User = getValue('user');
 
-    if (user.email.toLowerCase() === payload.email.toLowerCase()) {
-      throw new BadRequestException(
-        'New email cannot be same as current email',
-      );
-    }
-
-    await this.verifyPasswordResetCode({
+    const value = await this.verifyPasswordResetCode({
       code: payload.code,
       id: user.id,
     });
 
-    return this.userService.updateSingleUser(user.id, {
+    await this.userService.updateSingleUser(user.id, {
       email: payload.email,
       lastEmailChangeDate: new Date(),
     });
+
+    return { ...value, email: payload.email };
   }
 
   verify(payload: string): IJwtUser {

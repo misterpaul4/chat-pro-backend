@@ -18,7 +18,7 @@ import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
 import { ThreadTypeEnum } from './dto/enum';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { CrudRequest } from '@nestjsx/crud';
-import { UsersGateway } from '../users/users.gateway';
+import { UsersGateway } from '../user-gateway/users.gateway';
 import { ReadMessage } from './dto/message.dto';
 
 @Injectable()

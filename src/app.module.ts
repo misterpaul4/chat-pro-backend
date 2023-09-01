@@ -5,6 +5,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { InboxModule } from './modules/inbox/inbox.module';
 import { ThreadModule } from './modules/thread/thread.module';
 import { MailModule } from './modules/mail/mail.module';
+import { UserGatewayModule } from './modules/user-gateway/user-gateway.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { MailModule } from './modules/mail/mail.module';
     InboxModule,
     ThreadModule,
     MailModule,
+    UserGatewayModule,
   ],
 })
 export class AppModule {}

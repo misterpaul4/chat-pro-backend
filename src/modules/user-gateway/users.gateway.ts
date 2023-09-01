@@ -10,10 +10,12 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
-import { SocketEvents } from './enums';
+import { SocketEvents } from '../users/enums';
 import { AuthService } from '../auth/auth.service';
-import { TypingDto } from './dto/user-operations.dto';
-import { UsersService } from './users.service';
+import { TypingDto } from '../users/dto/user-operations.dto';
+import { UsersService } from '../users/users.service';
+import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
+import { UserGatewayBridgeService } from './user-gatway-bridge.service';
 
 @WebSocketGateway({
   transports: ['websocket'],
@@ -35,6 +37,7 @@ export class UsersGateway
   } = {};
 
   constructor(
+    private gatewayBridgeService: UserGatewayBridgeService,
     private readonly authService: AuthService,
     private readonly userSerive: UsersService,
   ) {}
@@ -111,6 +114,31 @@ export class UsersGateway
     });
   }
 
+  @SubscribeMessage(SocketEvents.NEW_MESSAGE)
+  async newMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: CreateInboxDto,
+  ) {
+    const userId = this.connectedIds[client.id];
+    const response = await this.gatewayBridgeService.dispatchMessage(
+      body,
+      userId,
+    );
+
+    if (!response) {
+      return false;
+    }
+
+    this.send(
+      response.recipientIds,
+      'newMessage',
+      response.socketPayload,
+      client.id,
+    );
+
+    return true;
+  }
+
   private addUser(clientAppId: string, id: string) {
     if (this.connectedUsers[clientAppId]) {
       this.connectedUsers[clientAppId].push(id);
@@ -139,15 +167,20 @@ export class UsersGateway
     return sockets.length;
   }
 
-  send(recipientAppIds: string[], event: `${SocketEvents}`, payload: any) {
-    const clients = [];
+  send(
+    recipientAppIds: string[],
+    event: `${SocketEvents}`,
+    payload: any,
+    skipUserId?: string,
+  ) {
     recipientAppIds.forEach((id) => {
       const socketIds = this.connectedUsers[id];
       if (socketIds) {
-        socketIds.forEach((clientId) =>
-          this.server.to(clientId).emit(event, payload),
+        socketIds.forEach(
+          (clientId) =>
+            skipUserId !== clientId &&
+            this.server.to(clientId).emit(event, payload),
         );
-        clients.push(id);
       }
     });
   }

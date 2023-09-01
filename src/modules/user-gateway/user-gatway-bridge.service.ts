@@ -22,6 +22,8 @@ export class UserGatewayBridgeService {
           id: true,
         },
         id: true,
+        createdBy: true,
+        unreadCountByUsers: {},
       },
     });
 

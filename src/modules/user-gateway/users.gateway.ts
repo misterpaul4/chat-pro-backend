@@ -126,7 +126,7 @@ export class UsersGateway
     );
 
     if (!response) {
-      return false;
+      return;
     }
 
     this.send(
@@ -136,7 +136,7 @@ export class UsersGateway
       client.id,
     );
 
-    return true;
+    return response.socketPayload;
   }
 
   private addUser(clientAppId: string, id: string) {

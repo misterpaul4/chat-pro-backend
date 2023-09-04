@@ -139,6 +139,29 @@ export class UsersGateway
     return response.socketPayload;
   }
 
+  @SubscribeMessage(SocketEvents.READ_MESSAGE)
+  async readMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() threadId: string,
+  ) {
+    const userId = this.connectedIds[client.id];
+    const response = await this.gatewayBridgeService.dispatchReadMessage(
+      userId,
+      threadId,
+    );
+
+    if (!response) {
+      return;
+    }
+
+    this.sendToUser(userId, 'readMessage', {
+      threadId,
+      userId: userId,
+    });
+
+    return { userId, threadId };
+  }
+
   private addUser(clientAppId: string, id: string) {
     if (this.connectedUsers[clientAppId]) {
       this.connectedUsers[clientAppId].push(id);

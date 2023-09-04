@@ -51,6 +51,23 @@ export class UserGatewayBridgeService {
     return { socketPayload, recipientIds };
   }
 
+  async dispatchReadMessage(userId: string, threadId: string) {
+    const thread = await this.threadRepo.findOne({
+      where: { id: threadId },
+      select: ['id', 'unreadCountByUsers'],
+    });
+
+    if (!thread) {
+      return;
+    }
+
+    await this.threadRepo.update(threadId, {
+      unreadCountByUsers: { ...thread.unreadCountByUsers, [userId]: 0 },
+    });
+
+    return true;
+  }
+
   private async updateThreadReadCount(
     senderId: string,
     thread: Thread,

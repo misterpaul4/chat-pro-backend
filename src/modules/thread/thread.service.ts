@@ -19,7 +19,6 @@ import { ThreadTypeEnum } from './dto/enum';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { CrudRequest } from '@nestjsx/crud';
 import { UsersGateway } from '../user-gateway/users.gateway';
-import { ReadMessage } from './dto/message.dto';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -156,21 +155,6 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     return thread;
   }
 
-  async addMessage(payload: CreateInboxDto): Promise<any> {
-    const sender: User = getValue('user');
-    const thread = await this.threadGuard(sender.id, payload.threadId);
-
-    const message = await this.inboxService.saveMessage({ ...payload, sender });
-
-    const unreadCountByUsers = await this.updateThreadReadCount(sender, thread);
-
-    const recipientIds: string[] = thread.users.map((usr) => usr.id);
-    const socketPayload = { message, unreadCountByUsers };
-    this.gatewayService.send(recipientIds, 'newMessage', socketPayload);
-
-    return message;
-  }
-
   async approveRequest(id: string): Promise<Thread> {
     const currentUser: User = getValue('user');
     const thread = await this.threadGuard(currentUser.id, id, true, [
@@ -232,29 +216,6 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
     );
     // TODO: send notification
     return contact;
-  }
-
-  async readMessage(threadId: ReadMessage['threadId']) {
-    const user: User = getValue('user');
-    const thread = await this.threadRepo.findOne({
-      where: { id: threadId },
-      select: ['id', 'unreadCountByUsers'],
-    });
-
-    if (!thread) {
-      throw new BadRequestException('Thread not found');
-    }
-
-    await this.threadRepo.update(threadId, {
-      unreadCountByUsers: { ...thread.unreadCountByUsers, [user.id]: 0 },
-    });
-
-    this.gatewayService.sendToUser(user.id, 'readMessage', {
-      threadId,
-      userId: user.id,
-    });
-
-    return true;
   }
 
   private async threadGuard(

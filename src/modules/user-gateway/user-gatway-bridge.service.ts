@@ -51,10 +51,18 @@ export class UserGatewayBridgeService {
     return { socketPayload, recipientIds };
   }
 
-  async dispatchReadMessage(userId: string, threadId: string) {
+  async dispatchReadMessage(
+    userId: string,
+    threadId: string,
+  ): Promise<string[]> {
     const thread = await this.threadRepo.findOne({
       where: { id: threadId },
-      select: ['id', 'unreadCountByUsers'],
+      relations: ['users'],
+      select: {
+        id: true,
+        unreadCountByUsers: {},
+        users: { id: true },
+      },
     });
 
     if (!thread) {
@@ -65,7 +73,7 @@ export class UserGatewayBridgeService {
       unreadCountByUsers: { ...thread.unreadCountByUsers, [userId]: 0 },
     });
 
-    return true;
+    return thread.users.map((user) => user.id);
   }
 
   private async updateThreadReadCount(

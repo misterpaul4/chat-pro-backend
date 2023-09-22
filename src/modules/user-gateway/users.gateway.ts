@@ -154,10 +154,7 @@ export class UsersGateway
       return;
     }
 
-    this.sendToUser(userId, 'readMessage', {
-      threadId,
-      userId: userId,
-    });
+    this.send(response, 'readMessage', { threadId, userId }, client.id);
 
     return { userId, threadId };
   }

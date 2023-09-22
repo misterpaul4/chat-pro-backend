@@ -54,16 +54,6 @@ export class ThreadController implements CrudController<Thread> {
     return this.service.createThread(body);
   }
 
-  @Post('send-message')
-  addMessage(@Body() body: CreateInboxDto) {
-    return this.service.addMessage(body);
-  }
-
-  @Post('read-message/:threadId')
-  readMessage(@Param() body: ReadMessage) {
-    return this.service.readMessage(body.threadId);
-  }
-
   @Post(':id/approve')
   approveRequest(@Param('id') id: string) {
     return this.service.approveRequest(id);

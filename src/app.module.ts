@@ -22,7 +22,7 @@ const dbConfig: TypeOrmModuleOptions = {
 @Module({
   imports: [
     UsersModule,
-    TypeOrmModule.forRoot(dbConfig),
+    TypeOrmModule.forRootAsync({ useFactory: () => dbConfig }),
     AuthModule,
     InboxModule,
     ThreadModule,

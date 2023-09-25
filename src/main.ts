@@ -4,6 +4,8 @@ import { middleware } from 'express-ctx';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 
+const port = process.env.PORT || 9287;
+
 async function bootstrap() {
   dotenv.config();
 
@@ -16,6 +18,6 @@ async function bootstrap() {
     }),
   );
   app.use(middleware);
-  await app.listen(9287);
+  await app.listen(port);
 }
 bootstrap();

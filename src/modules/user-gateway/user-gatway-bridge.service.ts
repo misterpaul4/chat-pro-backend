@@ -41,12 +41,17 @@ export class UserGatewayBridgeService {
     const message = await this.inboxService.saveMessage({
       ...payload,
       senderId: userId,
+      id: payload.updateId, // TODO: ID must not come from UI
     });
 
     const unreadCountByUsers = await this.updateThreadReadCount(userId, thread);
     const recipientIds: string[] = thread.users.map((usr) => usr.id);
 
-    const socketPayload = { message, unreadCountByUsers };
+    const socketPayload = {
+      message,
+      unreadCountByUsers,
+      updateId: payload.updateId,
+    };
 
     return { socketPayload, recipientIds };
   }

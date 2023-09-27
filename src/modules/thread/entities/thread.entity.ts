@@ -46,14 +46,14 @@ export class Thread extends BaseEntityWithCreators {
   unreadCountByUsers: Record<string, number>;
 
   @BeforeInsert()
-  readByUser?() {
+  readByUsers?() {
     const user: User = getValue('user');
     const threadUsers = this.users;
     const unreadCount = {};
     threadUsers.forEach((usr) => {
       unreadCount[usr.id] = 1;
     });
-
-    threadUsers[user.id] = 0;
+    unreadCount[user.id] = 0;
+    this.unreadCountByUsers = unreadCount;
   }
 }

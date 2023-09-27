@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { InboxModule } from './modules/inbox/inbox.module';
@@ -12,17 +12,25 @@ import { UserGatewayModule } from './modules/user-gateway/user-gateway.module';
     UsersModule,
     TypeOrmModule.forRootAsync({
       useFactory: () => {
-        return {
+        let options: TypeOrmModuleOptions = {
           type: 'postgres',
           synchronize: true,
           autoLoadEntities: true,
-          // host: 'localhost',
-          // database: 'postgres',
-          // schema: 'chat-pro',
-          // username: 'postgres',
-          // password: null,
           url: process.env.DATABASE_URL,
         };
+
+        if (process.env.DEV) {
+          options = {
+            ...options,
+            host: 'localhost',
+            database: 'postgres',
+            schema: 'chat-pro',
+            username: 'postgres',
+            password: null,
+          };
+        }
+
+        return options;
       },
     }),
     AuthModule,

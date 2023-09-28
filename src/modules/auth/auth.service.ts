@@ -239,7 +239,9 @@ export class AuthService {
       lastEmailChangeDate: new Date(),
     });
 
-    return { ...value, email: payload.email };
+    const token = this.issueToken({ email: payload.email, id: user.id });
+
+    return { ...value, email: payload.email, token };
   }
 
   verify(payload: string): IJwtUser {

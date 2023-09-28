@@ -20,7 +20,11 @@ import {
   ResetPasswordDto,
 } from './dto/login-auth.dto';
 import { CrudRequestInterceptor } from '@nestjsx/crud';
-import { EmailChangeDto, EmailChangeRequestDto } from './dto/index.dto';
+import {
+  ChangePasswordDto,
+  EmailChangeDto,
+  EmailChangeRequestDto,
+} from './dto/index.dto';
 
 @Controller('auth')
 @UseFilters(HttpExceptionFilter)
@@ -46,6 +50,12 @@ export class AuthController {
   @Post('reset-password')
   resetPassword(@Body() body: ResetPasswordDto) {
     return this.authService.resetPassword(body.password, body.code, body.id);
+  }
+
+  @Post('change-password')
+  @UseGuards(AuthGuard())
+  changePassword(@Body() body: ChangePasswordDto) {
+    return this.authService.changePassword(body);
   }
 
   @Post('email-change-request')

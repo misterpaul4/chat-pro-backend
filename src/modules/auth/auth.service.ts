@@ -14,7 +14,7 @@ import { IJwtPayload, IJwtUser } from './dto/jwt-payload';
 import { MailService } from '../mail/mail.service';
 import { generateRandomNumber } from 'src/utils/string';
 import { User } from '../users/entities/user.entity';
-import { EmailChangeDto } from './dto/index.dto';
+import { ChangePasswordDto, EmailChangeDto } from './dto/index.dto';
 import { getValue } from 'express-ctx';
 
 @Injectable()
@@ -242,6 +242,31 @@ export class AuthService {
     const token = this.issueToken({ email: payload.email, id: user.id });
 
     return { ...value, email: payload.email, token };
+  }
+
+  async changePassword(payload: ChangePasswordDto) {
+    const _user: User = getValue('user');
+    const user = await this.userService.findOne({
+      where: { id: _user.id },
+      select: ['password'],
+    });
+    const passwordIsValid = await bcrypt.compare(
+      payload.oldPassword,
+      user.password,
+    );
+
+    if (passwordIsValid) {
+      const salt = await bcrypt.genSalt();
+      const hashPassword = await bcrypt.hash(payload.newPassword, salt);
+      await this.userService.updateSingleUser(_user.id, {
+        password: hashPassword,
+        lastPasswordChangeDate: new Date(),
+      });
+
+      return { message: 'Password reset successful' };
+    }
+
+    throw new BadRequestException('Old password is not correct');
   }
 
   verify(payload: string): IJwtUser {

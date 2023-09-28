@@ -20,6 +20,26 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
   }
 
   async saveMessage(payload: CreateInboxDto) {
+    if (payload.reply) {
+      const inbox = await this.inboxRepo.findOne({
+        where: { id: payload.reply },
+        relations: ['sender'],
+        select: {
+          message: true,
+          id: true,
+          sender: { id: true, firstName: true },
+        },
+      });
+
+      if (inbox) {
+        payload.replyingTo = {
+          message: inbox.message,
+          sender: inbox.sender.firstName,
+          id: inbox.id,
+          senderId: inbox.sender.id,
+        };
+      }
+    }
     const instance = this.inboxRepo.create(payload);
 
     try {

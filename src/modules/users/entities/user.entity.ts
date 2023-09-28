@@ -17,6 +17,12 @@ export class User extends BaseEntity {
   @Index()
   email: string;
 
+  @Column({ nullable: true, type: 'timestamptz' })
+  lastEmailChangeDate: Date;
+
+  @Column({ nullable: true, type: 'timestamptz' })
+  lastPasswordChangeDate: Date;
+
   @IsString()
   @MinLength(8)
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
@@ -37,6 +43,12 @@ export class User extends BaseEntity {
   @IsString()
   @IsOptional()
   middleName: string;
+
+  @Column({ nullable: true })
+  verifCode: string;
+
+  @Column({ nullable: true, type: 'timestamptz' })
+  verifCodeCreatedAt: Date;
 
   @OneToMany(() => UserContactList, (contacts) => contacts.user)
   contacts: UserContactList[];

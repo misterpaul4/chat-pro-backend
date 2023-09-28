@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UsersGateway } from './users.gateway';
 import { DataSource } from 'typeorm';
-import { UserContactList } from './entities/user-contactlist';
+import { UserContactList } from '../users/entities/user-contactlist';
 
 @Injectable()
-export class UsersPresetsService {
-  private readonly logger = new Logger(UsersPresetsService.name);
+export class UsersGatewayService {
+  private readonly logger = new Logger(UsersGatewayService.name);
 
   constructor(
     private readonly gatewayService: UsersGateway,

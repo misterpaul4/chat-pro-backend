@@ -5,6 +5,7 @@ import {
   Post,
   UseFilters,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { HttpExceptionFilter } from 'src/lib/http-exception.filter';
@@ -12,7 +13,18 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user-decorator';
-import { LoginDto } from './dto/login-auth.dto';
+import {
+  ForgotPasswordDto,
+  LoginDto,
+  PasswordResetCode,
+  ResetPasswordDto,
+} from './dto/login-auth.dto';
+import { CrudRequestInterceptor } from '@nestjsx/crud';
+import {
+  ChangePasswordDto,
+  EmailChangeDto,
+  EmailChangeRequestDto,
+} from './dto/index.dto';
 
 @Controller('auth')
 @UseFilters(HttpExceptionFilter)
@@ -27,6 +39,40 @@ export class AuthController {
   @Post('login')
   login(@Body() body: LoginDto) {
     return this.authService.login(body);
+  }
+
+  @Post('forgot-password')
+  @UseInterceptors(CrudRequestInterceptor)
+  forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() body: ResetPasswordDto) {
+    return this.authService.resetPassword(body.password, body.code, body.id);
+  }
+
+  @Post('change-password')
+  @UseGuards(AuthGuard())
+  changePassword(@Body() body: ChangePasswordDto) {
+    return this.authService.changePassword(body);
+  }
+
+  @Post('email-change-request')
+  @UseGuards(AuthGuard())
+  changeEmailRequest(@Body() body: EmailChangeRequestDto) {
+    return this.authService.changeEmailStep1(body.email);
+  }
+
+  @Post('email-change-submit')
+  @UseGuards(AuthGuard())
+  changeEmail(@Body() body: EmailChangeDto) {
+    return this.authService.changeEmailStep2(body);
+  }
+
+  @Post('verify-password-reset-code')
+  verifyPasswordResetCode(@Body() body: PasswordResetCode) {
+    return this.authService.verifyPasswordResetCode(body);
   }
 
   @Get('get-self')

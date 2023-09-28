@@ -1,20 +1,30 @@
 import {
+  BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login-auth.dto';
+import { LoginDto, PasswordResetCode } from './dto/login-auth.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { IJwtPayload, IJwtUser } from './dto/jwt-payload';
+import { MailService } from '../mail/mail.service';
+import { generateRandomNumber } from 'src/utils/string';
+import { User } from '../users/entities/user.entity';
+import { ChangePasswordDto, EmailChangeDto } from './dto/index.dto';
+import { getValue } from 'express-ctx';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly userService: UsersService,
     private jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {}
 
   async createUser(values: CreateUserDto) {
@@ -54,6 +64,209 @@ export class AuthService {
     }
 
     throw new NotFoundException('Unauthorized');
+  }
+
+  async resetPassword(password: string, code: string, id: string) {
+    const user = await this.verifyPasswordResetCode({ code, id });
+
+    const salt = await bcrypt.genSalt();
+    password = await bcrypt.hash(password, salt);
+
+    await this.userService.updateSingleUser(id, {
+      password,
+      verifCode: null,
+      verifCodeCreatedAt: null,
+    });
+
+    const token = await this.issueToken({
+      email: user.email,
+      id,
+    });
+
+    const { firstName, lastName, middleName, email } = user;
+
+    return {
+      token,
+      user: { id, firstName, lastName, middleName, email },
+    };
+  }
+
+  async verifyPasswordResetCode(param: PasswordResetCode): Promise<User> {
+    const { code, id } = param;
+    const user = await this.userService.findOne({
+      where: { id },
+    });
+
+    // check if code is still valid
+    const date = new Date(user.verifCodeCreatedAt);
+    const now = new Date();
+    const timeDifference = now.getTime() - date.getTime();
+    const oneHourInMilliseconds = 60 * 60 * 1000;
+
+    if (!user || timeDifference > oneHourInMilliseconds) {
+      throw new BadRequestException('Invalid Request');
+    }
+
+    if (user.verifCode !== code) {
+      throw new BadRequestException('Invalid verification code');
+    }
+
+    return {
+      ...user,
+      password: undefined,
+      verifCode: undefined,
+      verifCodeCreatedAt: undefined,
+    };
+  }
+
+  async sendEmailCode(
+    getEmailContent: (code: number) => [string, string],
+    email: string,
+    userId: string,
+  ) {
+    const verificationCode = generateRandomNumber(6);
+
+    const [subject, content] = getEmailContent(verificationCode);
+
+    try {
+      await this.mailService.sendMail({
+        to: email,
+        from: process.env.MAIL_CRED_EMAIL,
+        subject,
+        html: content,
+      });
+
+      const update = await this.userService.updateSingleUser(userId, {
+        verifCode: verificationCode.toString(),
+        verifCodeCreatedAt: new Date(),
+      });
+
+      return update;
+    } catch (error) {
+      await this.userService.updateSingleUser(userId, {
+        verifCode: null,
+      });
+
+      throw new BadRequestException('Your request could not be completed');
+    }
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.userService.findOne({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.sendEmailCode(
+      (verificationCode) => [
+        'Password Reset Request',
+        `<div>
+      <p>
+        Hi ${user.firstName}, We have received a request to reset the password associated with your account.
+        </p>
+
+        <p>
+        The verification code for your request is <strong>${verificationCode}</strong>
+        </p>
+        <p>
+        If you did not initiate this request, please disregard this email. Your account remains secure, and no changes have been made
+      </p>
+    </div>`,
+      ],
+      user.email,
+      user.id,
+    );
+
+    return { id: user.id };
+  }
+
+  async changeEmailStep1(email: string) {
+    const user: User = getValue('user');
+
+    const emailExist = await this.userService.findOne({ where: { email } });
+
+    if (emailExist) {
+      throw new BadRequestException('This email cannot be used');
+    }
+
+    const resp = await this.sendEmailCode(
+      (code: number) => [
+        'Email Change Request',
+        `<div>
+    <p>
+     Hi ${user.firstName}, We have received a request to change the email address associated with your account. To ensure the security of your account, we require a verification step to complete this process.
+    </p>
+
+   <p>
+   Please find below a 6-digit verification code that you will need to enter in the app to verify your email change:
+   </p>
+
+   <p>
+   Verification Code: <strong>${code}</strong>
+   </p>
+
+   <p>
+     <em>If you did not initiate this email change request, please disregard this email and ensure the security of your account by changing your password immediately.</em>
+   </p>
+   </div>`,
+      ],
+      email,
+      user.id,
+    );
+
+    if (!resp) {
+      throw new BadRequestException('Request not completed');
+    }
+
+    return { email };
+  }
+
+  async changeEmailStep2(payload: EmailChangeDto) {
+    const user: User = getValue('user');
+
+    const value = await this.verifyPasswordResetCode({
+      code: payload.code,
+      id: user.id,
+    });
+
+    await this.userService.updateSingleUser(user.id, {
+      email: payload.email,
+      lastEmailChangeDate: new Date(),
+    });
+
+    const token = this.issueToken({ email: payload.email, id: user.id });
+
+    return { ...value, email: payload.email, token };
+  }
+
+  async changePassword(payload: ChangePasswordDto) {
+    const _user: User = getValue('user');
+    const user = await this.userService.findOne({
+      where: { id: _user.id },
+      select: ['password'],
+    });
+    const passwordIsValid = await bcrypt.compare(
+      payload.oldPassword,
+      user.password,
+    );
+
+    if (passwordIsValid) {
+      const salt = await bcrypt.genSalt();
+      const hashPassword = await bcrypt.hash(payload.newPassword, salt);
+      await this.userService.updateSingleUser(_user.id, {
+        password: hashPassword,
+        lastPasswordChangeDate: new Date(),
+      });
+
+      return { message: 'Password reset successful' };
+    }
+
+    throw new BadRequestException('Old password is not correct');
   }
 
   verify(payload: string): IJwtUser {

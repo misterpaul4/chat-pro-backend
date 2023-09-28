@@ -20,6 +20,7 @@ import { excludeAllRoutes, generalCrudOptions } from 'src/utils/crud';
 import { AuthGuard } from '@nestjs/passport';
 import { CreatePrivateThreadDto } from './dto/create-thread.dto';
 import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
+import { ReadMessage } from './dto/message.dto';
 
 @Crud({
   model: {
@@ -51,11 +52,6 @@ export class ThreadController implements CrudController<Thread> {
   @Post()
   createThread(@Body() body: CreatePrivateThreadDto) {
     return this.service.createThread(body);
-  }
-
-  @Post('send-message')
-  addMessage(@Body() body: CreateInboxDto) {
-    return this.service.addMessage(body);
   }
 
   @Post(':id/approve')

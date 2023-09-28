@@ -8,4 +8,5 @@ export enum SocketEvents {
   REJECTED_REQUEST_USER = 'rejectedRequestUser',
   TYPING = 'typing',
   ONLINE_STATUS = 'onlineStatus',
+  READ_MESSAGE = 'readMessage',
 }

@@ -18,8 +18,7 @@ import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
 import { ThreadTypeEnum } from './dto/enum';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { CrudRequest } from '@nestjsx/crud';
-import { UsersGateway } from '../users/users.gateway';
-import { Inbox } from '../inbox/entities/inbox.entity';
+import { UsersGateway } from '../user-gateway/users.gateway';
 
 @Injectable()
 export class ThreadService extends TypeOrmCrudService<Thread> {
@@ -135,7 +134,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
         select: ['email', 'id', 'firstName', 'lastName', 'middleName'],
       });
       thread.users = [sender, resp];
-      recipient.push(resp.email);
+      recipient.push(resp.id);
     } else {
       thread.users = [sender];
     }
@@ -151,21 +150,9 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       .map((usr) => usr.id);
     const socketPayload = { ...thread, messages: [message] };
     this.gatewayService.send(recipientIds, 'request', socketPayload);
-    this.gatewayService.sendToUser(sender.email, 'inbox', socketPayload);
+    this.gatewayService.sendToUser(sender.id, 'inbox', socketPayload);
 
     return thread;
-  }
-
-  async addMessage(payload: CreateInboxDto): Promise<Inbox> {
-    const sender: User = getValue('user');
-    const thread = await this.threadGuard(sender.id, payload.threadId);
-
-    const message = await this.inboxService.saveMessage({ ...payload, sender });
-    const recipientIds: string[] = thread.users.map((usr) => usr.id);
-    const socketPayload = message;
-    this.gatewayService.send(recipientIds, 'newMessage', socketPayload);
-
-    return message;
   }
 
   async approveRequest(id: string): Promise<Thread> {
@@ -223,7 +210,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
 
     this.gatewayService.send(recipientIds, 'rejectedRequestUser', thread.id);
     this.gatewayService.sendToUser(
-      currentUser.email,
+      currentUser.id,
       'rejectedRequest',
       thread.id,
     );
@@ -255,6 +242,7 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
           },
           id: true,
           createdBy: true,
+          unreadCountByUsers: {},
         },
       });
 
@@ -273,5 +261,23 @@ export class ThreadService extends TypeOrmCrudService<Thread> {
       this.logger.error('Thread not found or unauthorized');
       throw new BadRequestException('You cannot perform action on this thread');
     }
+  }
+
+  private async updateThreadReadCount(
+    sender: User,
+    thread: Thread,
+  ): Promise<Thread['unreadCountByUsers']> {
+    const threadReadCount = { ...thread.unreadCountByUsers };
+
+    thread.users.forEach((user) => {
+      threadReadCount[user.id] = (threadReadCount[user.id] ?? 0) + 1;
+    });
+
+    threadReadCount[sender.id] = 0;
+    await this.threadRepo.update(thread.id, {
+      unreadCountByUsers: threadReadCount,
+    });
+
+    return threadReadCount;
   }
 }

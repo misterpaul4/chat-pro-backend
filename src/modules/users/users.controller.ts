@@ -7,12 +7,20 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
   UsePipes,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { Crud, CrudController } from '@nestjsx/crud';
+import {
+  Crud,
+  CrudController,
+  CrudRequest,
+  CrudRequestInterceptor,
+  Override,
+  ParsedRequest,
+} from '@nestjsx/crud';
 import { User } from './entities/user.entity';
-import { excludeAllRoutes, generalCrudOptions } from 'src/utils/crud';
+import { generalCrudOptions } from 'src/utils/crud';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CurrentUser } from '../auth/current-user-decorator';
@@ -23,7 +31,7 @@ import {
 } from './dto/user-operations.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { UuidValidationPipe } from 'src/lib/uuid-validation.pipe';
-import { UsersPresetsService } from './users-presets.service';
+import { ResourceGuard } from './user-resource.guard';
 
 @Crud({
   model: {
@@ -31,7 +39,7 @@ import { UsersPresetsService } from './users-presets.service';
   },
   ...generalCrudOptions,
   dto: { create: CreateUserDto, update: UpdateUserDto },
-  routes: excludeAllRoutes,
+  routes: { only: ['updateOneBase'] },
   query: {
     ...generalCrudOptions.query,
     exclude: ['password'],
@@ -53,10 +61,17 @@ import { UsersPresetsService } from './users-presets.service';
 @Controller('users')
 @UseGuards(AuthGuard())
 export class UsersController implements CrudController<User> {
-  constructor(
-    public service: UsersService,
-    private presetsService: UsersPresetsService,
-  ) {}
+  constructor(public service: UsersService) {}
+
+  @Override('updateOneBase')
+  @UseInterceptors(CrudRequestInterceptor)
+  @UseGuards(ResourceGuard)
+  updateOne(
+    @ParsedRequest() req: CrudRequest,
+    @Body() dto: UpdateUserDto,
+  ): Promise<User> {
+    return this.service.updateOne(req, dto);
+  }
 
   @Get('contacts')
   getContacts(@CurrentUser() user: User) {
@@ -82,10 +97,5 @@ export class UsersController implements CrudController<User> {
   @Patch('mass-update-contacts')
   updateContacts(@Body() body: UpdateContactsDto) {
     return this.service.updateContacts(body);
-  }
-
-  @Get('online-contacts')
-  getOnlineContacts(@CurrentUser() user: User) {
-    return this.presetsService.getOnlineContacts(user.id);
   }
 }

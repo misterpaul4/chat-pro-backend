@@ -132,4 +132,8 @@ export class UsersService extends TypeOrmCrudService<User> {
       return [];
     }
   }
+
+  async updateSingleUser(id: string, values: Partial<User>) {
+    return this.repo.update(id, values);
+  }
 }

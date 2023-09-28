@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ThreadService } from './thread.service';
 import { ThreadController } from './thread.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -8,6 +8,7 @@ import { InboxModule } from '../inbox/inbox.module';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { User } from '../users/entities/user.entity';
 import { UsersModule } from '../users/users.module';
+import { UserGatewayModule } from '../user-gateway/user-gateway.module';
 
 @Module({
   controllers: [ThreadController],
@@ -17,6 +18,8 @@ import { UsersModule } from '../users/users.module';
     AuthModule,
     InboxModule,
     UsersModule,
+    UserGatewayModule,
   ],
+  exports: [ThreadService],
 })
 export class ThreadModule {}

@@ -2,8 +2,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { middleware } from 'express-ctx';
 import { AppModule } from './app.module';
+import * as dotenv from 'dotenv';
 
 async function bootstrap() {
+  dotenv.config();
+
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.useGlobalPipes(
@@ -13,6 +16,6 @@ async function bootstrap() {
     }),
   );
   app.use(middleware);
-  await app.listen(9287);
+  await app.listen(process.env.PORT || 3000);
 }
 bootstrap();

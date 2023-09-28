@@ -20,10 +20,13 @@ export class UserGatewayBridgeService {
       select: {
         users: {
           id: true,
+          firstName: true,
+          lastName: true,
         },
         id: true,
         createdBy: true,
         unreadCountByUsers: {},
+        type: true,
       },
     });
 
@@ -32,8 +35,10 @@ export class UserGatewayBridgeService {
       return;
     }
 
+    const sender = thread.users.find((user) => user.id === userId);
+
     // if user is present in thread users
-    if (!thread.users.find((user) => user.id === userId)) {
+    if (!sender) {
       return;
     }
 
@@ -51,6 +56,8 @@ export class UserGatewayBridgeService {
       message,
       unreadCountByUsers,
       updateId: payload.updateId,
+      type: thread.type,
+      sender: `${sender.firstName} ${sender.lastName}`,
     };
 
     return { socketPayload, recipientIds };

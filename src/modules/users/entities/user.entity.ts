@@ -23,6 +23,9 @@ export class User extends BaseEntity {
   @Column({ nullable: true, type: 'timestamptz' })
   lastPasswordChangeDate: Date;
 
+  @Column({ nullable: true, type: 'timestamptz' })
+  lastSeen: Date;
+
   @IsString()
   @MinLength(8)
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {

@@ -81,11 +81,16 @@ export class UsersGateway
   }
 
   handleDisconnect(@ConnectedSocket() client: Socket) {
+    const userId = this.connectedIds[client.id];
     // send online status
-    this.sendOnlineStatus(this.connectedIds[client.id], false);
+    this.sendOnlineStatus(userId, false);
 
     // remove from connected users
     this.removeUser(client.id);
+
+    // update last seen
+    this.userSerive.updateSingleUser(userId, { lastSeen: new Date() });
+
     this.logger.log(`Client Disconnected`, {
       connectedUsers: this.connectedUsers,
     });

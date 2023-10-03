@@ -80,16 +80,17 @@ export class UsersGateway
     this.sendOnlineStatus(userId, true);
   }
 
-  handleDisconnect(@ConnectedSocket() client: Socket) {
+  async handleDisconnect(@ConnectedSocket() client: Socket) {
     const userId = this.connectedIds[client.id];
+    const lastSeen = new Date();
+    // update last seen
+    await this.userSerive.updateSingleUser(userId, { lastSeen });
+
     // send online status
-    this.sendOnlineStatus(userId, false);
+    this.sendOnlineStatus(userId, false, lastSeen.toISOString());
 
     // remove from connected users
     this.removeUser(client.id);
-
-    // update last seen
-    this.userSerive.updateSingleUser(userId, { lastSeen: new Date() });
 
     this.logger.log(`Client Disconnected`, {
       connectedUsers: this.connectedUsers,
@@ -221,16 +222,20 @@ export class UsersGateway
     return contactList.filter((contact) => this.connectedUsers[contact]);
   }
 
-  async sendOnlineStatus(clientAppId: string, isOnline: boolean) {
+  async sendOnlineStatus(
+    clientAppId: string,
+    isOnline: boolean,
+    lastSeen?: string,
+  ) {
     // get thread users
+    const payload = { user: clientAppId, isOnline, lastSeen };
+
     const userContacts = await this.userSerive.getContacts(clientAppId);
     userContacts.forEach((user) => {
       const contactSocketIds = this.connectedUsers[user.contactId] || [];
-      contactSocketIds.forEach((ctSocket) =>
-        this.server
-          .to(ctSocket)
-          .emit(SocketEvents.ONLINE_STATUS, { user: clientAppId, isOnline }),
-      );
+      contactSocketIds.forEach((ctSocket) => {
+        this.server.to(ctSocket).emit(SocketEvents.ONLINE_STATUS, payload);
+      });
     });
   }
 }

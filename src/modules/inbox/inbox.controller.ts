@@ -33,7 +33,13 @@ import { User } from '../users/entities/user.entity';
       },
       ['threads.users']: {
         eager: false,
-        exclude: ['password'],
+        exclude: [
+          'password',
+          'verifCode',
+          'verifCodeCreatedAt',
+          'lastEmailChangeDate',
+          'lastPasswordChangeDate',
+        ],
       },
     },
   },

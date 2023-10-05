@@ -9,6 +9,7 @@ import { BaseEntity } from 'src/lib/base.entity';
 import { Column, Entity, Index, ManyToMany, OneToMany } from 'typeorm';
 import { UserContactList } from './user-contactlist';
 import { Thread } from 'src/modules/thread/entities/thread.entity';
+import { AuthProviders } from 'src/modules/auth-providers/entities/auth-providers.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -53,9 +54,15 @@ export class User extends BaseEntity {
   @Column({ nullable: true, type: 'timestamptz' })
   verifCodeCreatedAt: Date;
 
+  @Column({ default: false, type: 'boolean' })
+  has3rdPartyAuth?: boolean;
+
   @OneToMany(() => UserContactList, (contacts) => contacts.user)
   contacts: UserContactList[];
 
   @ManyToMany(() => Thread, (thread) => thread.users)
   threads: Thread;
+
+  @OneToMany(() => AuthProviders, (authProviders) => authProviders.user)
+  authProviders?: AuthProviders[];
 }

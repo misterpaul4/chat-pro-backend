@@ -8,6 +8,7 @@ import { MailModule } from './modules/mail/mail.module';
 import { UserGatewayModule } from './modules/user-gateway/user-gateway.module';
 import { ConfigModule } from '@nestjs/config';
 import { FirebaseModule } from './modules/firebase/firebase.module';
+import { AuthProvidersModule } from './modules/auth-providers/auth-providers.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { FirebaseModule } from './modules/firebase/firebase.module';
     MailModule,
     UserGatewayModule,
     FirebaseModule,
+    AuthProvidersModule,
   ],
 })
 export class AppModule {}

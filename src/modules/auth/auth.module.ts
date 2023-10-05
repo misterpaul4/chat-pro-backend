@@ -7,6 +7,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JWT_EXPIRY, JWT_SECRET } from 'src/settings';
 import { JwtStrategy } from './jwt-strategy';
 import { MailModule } from '../mail/mail.module';
+import { AuthProvidersModule } from '../auth-providers/auth-providers.module';
 
 @Module({
   controllers: [AuthController],
@@ -22,6 +23,7 @@ import { MailModule } from '../mail/mail.module';
       },
     }),
     MailModule,
+    AuthProvidersModule,
   ],
 })
 export class AuthModule {}

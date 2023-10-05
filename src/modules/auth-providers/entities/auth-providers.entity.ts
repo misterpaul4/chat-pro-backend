@@ -19,7 +19,7 @@ export class AuthProviders extends BaseEntityWithCreators {
 
   @Column({ type: 'uuid' })
   @Index()
-  userId: string;
+  userId?: string;
 
   @ManyToOne(() => User, (user) => user.authProviders, { onDelete: 'CASCADE' })
   user?: User;

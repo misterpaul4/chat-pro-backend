@@ -32,7 +32,7 @@ export class User extends BaseEntity {
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
     message: 'password is weak',
   })
-  @Column()
+  @Column({ nullable: true })
   password: string;
 
   @IsString()

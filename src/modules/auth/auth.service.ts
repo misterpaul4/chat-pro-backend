@@ -16,6 +16,9 @@ import { generateRandomNumber } from 'src/utils/string';
 import { User } from '../users/entities/user.entity';
 import { ChangePasswordDto, EmailChangeDto } from './dto/index.dto';
 import { getValue } from 'express-ctx';
+import { AuthProvidersService } from '../auth-providers/auth-providers.service';
+import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
+import { AuthProviders } from '../auth-providers/entities/auth-providers.entity';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +28,7 @@ export class AuthService {
     private readonly userService: UsersService,
     private jwtService: JwtService,
     private readonly mailService: MailService,
+    private readonly authProviderService: AuthProvidersService,
   ) {}
 
   async createUser(values: CreateUserDto) {
@@ -32,6 +36,33 @@ export class AuthService {
     values.password = await bcrypt.hash(values.password, salt);
 
     return this.userService.createOne(undefined, values);
+  }
+
+  async createUserWith3rdParty() {
+    const firebaseUser: DecodedIdToken = getValue('user');
+
+    const name = firebaseUser.name.split(' ');
+    const firstName = name[0];
+    const lastName = name[name.length - 1];
+
+    const user = await this.userService.createOne(undefined, {
+      email: firebaseUser.email,
+      has3rdPartyAuth: true,
+      firstName,
+      lastName,
+    });
+
+    await this.authProviderService.createOne({
+      providerId: firebaseUser.uid,
+      name: firebaseUser.firebase.sign_in_provider,
+      userId: user.id,
+      extraData: {
+        photo: firebaseUser.picture,
+        emailVerified: firebaseUser.email_verified,
+      },
+    });
+
+    return { ...user, password: undefined };
   }
 
   async login(values: LoginDto) {
@@ -64,6 +95,12 @@ export class AuthService {
     }
 
     throw new NotFoundException('Unauthorized');
+  }
+
+  async loginWih3rdParty() {
+    const firebaseUser: DecodedIdToken = getValue('user');
+
+    return firebaseUser;
   }
 
   async resetPassword(password: string, code: string, id: string) {

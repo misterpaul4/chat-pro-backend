@@ -18,7 +18,6 @@ import { ChangePasswordDto, EmailChangeDto } from './dto/index.dto';
 import { getValue } from 'express-ctx';
 import { AuthProvidersService } from '../auth-providers/auth-providers.service';
 import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
-import { AuthProviders } from '../auth-providers/entities/auth-providers.entity';
 
 @Injectable()
 export class AuthService {
@@ -100,7 +99,17 @@ export class AuthService {
   async loginWih3rdParty() {
     const firebaseUser: DecodedIdToken = getValue('user');
 
-    return firebaseUser;
+    const { id, firstName, lastName, email } = firebaseUser.user;
+
+    const token = this.issueToken({
+      email: firebaseUser.email,
+      id,
+    });
+
+    return {
+      token,
+      user: { id, firstName, lastName, email },
+    };
   }
 
   async resetPassword(password: string, code: string, id: string) {

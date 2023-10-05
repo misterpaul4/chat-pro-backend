@@ -14,7 +14,6 @@ import { InboxService } from '../inbox/inbox.service';
 import { getValue } from 'express-ctx';
 import { User } from '../users/entities/user.entity';
 import { generatePrivateThreadCode } from 'src/utils/string';
-import { CreateInboxDto } from '../inbox/dto/create-inbox.dto';
 import { ThreadTypeEnum } from './dto/enum';
 import { UserContactList } from '../users/entities/user-contactlist';
 import { CrudRequest } from '@nestjsx/crud';

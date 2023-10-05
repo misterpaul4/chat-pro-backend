@@ -42,12 +42,24 @@ export class FirebaseAuthStrategy extends PassportStrategy(
     if (isFirebaseLogin) {
       const verifiedUser = await this.authProviderService.findOne({
         where: { providerId: firebaseUser.uid },
-        select: ['providerId'],
+        relations: ['user'],
+        select: {
+          providerId: true,
+          id: true,
+          user: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
       });
 
       if (!verifiedUser) {
         throw new UnauthorizedException('User not found');
       }
+
+      firebaseUser.user = verifiedUser.user;
     }
 
     setValue('user', firebaseUser);

@@ -41,6 +41,8 @@ import { AuthProvidersModule } from './modules/auth-providers/auth-providers.mod
       load: [
         () => ({
           FB_SERVICE_ACCOUNT_CRED: process.env.FB_SERVICE_ACCOUNT_CRED,
+          JWT_SECRET: process.env.JWT_SECRET,
+          JWT_EXPIRY: process.env.JWT_EXPIRY,
         }),
       ],
       envFilePath: '.env',

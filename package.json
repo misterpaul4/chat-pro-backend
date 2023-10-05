@@ -22,6 +22,7 @@
   "dependencies": {
     "@nestjs-modules/mailer": "^1.9.1",
     "@nestjs/common": "^9.0.0",
+    "@nestjs/config": "^3.1.1",
     "@nestjs/core": "^9.0.0",
     "@nestjs/jwt": "^10.0.2",
     "@nestjs/mapped-types": "*",
@@ -40,8 +41,10 @@
     "class-validator": "^0.14.0",
     "dotenv": "^16.3.1",
     "express-ctx": "^0.1.1",
+    "firebase-admin": "^11.11.0",
     "nodemailer": "^6.9.4",
     "passport": "^0.6.0",
+    "passport-firebase-jwt": "^1.2.1",
     "passport-jwt": "^4.0.1",
     "pg": "^8.10.0",
     "reflect-metadata": "^0.1.13",

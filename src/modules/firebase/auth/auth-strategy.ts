@@ -30,7 +30,7 @@ export class FirebaseAuthStrategy extends PassportStrategy(
       .verifyIdToken(token)
       .catch((err) => {
         this.logger.error(err);
-        throw new UnauthorizedException('Invalid Token');
+        throw new UnauthorizedException('User not found');
       });
 
     if (!firebaseUser) {

@@ -61,7 +61,17 @@ export class AuthService {
       },
     });
 
-    return { ...user, password: undefined };
+    user.password = undefined;
+
+    const token = this.issueToken({
+      email: firebaseUser.email,
+      id: user.id,
+    });
+
+    return {
+      token,
+      user,
+    };
   }
 
   async login(values: LoginDto) {

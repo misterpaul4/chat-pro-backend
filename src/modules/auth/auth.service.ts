@@ -125,9 +125,21 @@ export class AuthService {
       id,
     });
 
+    const user = await this.userService.findOne({
+      where: { id },
+      select: ['has3rdPartyAuth', 'password', 'id'],
+    });
+
     return {
       token,
-      user: { id, firstName, lastName, email },
+      user: {
+        id,
+        firstName,
+        lastName,
+        email,
+        hasPassword: !!user.password,
+        has3rdPartyAuth: user.has3rdPartyAuth,
+      },
     };
   }
 

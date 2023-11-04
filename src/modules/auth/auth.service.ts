@@ -143,6 +143,37 @@ export class AuthService {
     };
   }
 
+  async connectFirebaseAuth(id: string) {
+    const firebaseUser: DecodedIdToken = getValue('user');
+
+    const user = await this.userService.findOne({
+      where: { id },
+      select: ['email', 'id'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('Request Failed!');
+    }
+
+    if (user.email !== firebaseUser.email) {
+      throw new BadRequestException(
+        'This email is not associated with your account!',
+      );
+    }
+
+    await this.authProviderService.createOne({
+      providerId: firebaseUser.uid,
+      name: firebaseUser.firebase.sign_in_provider,
+      userId: id,
+      extraData: {
+        photo: firebaseUser.picture,
+        emailVerified: firebaseUser.email_verified,
+      },
+    });
+
+    return this.userService.updateSingleUser(id, { has3rdPartyAuth: true });
+  }
+
   async resetPassword(password: string, code: string, id: string) {
     const user = await this.verifyPasswordResetCode({ code, id });
 

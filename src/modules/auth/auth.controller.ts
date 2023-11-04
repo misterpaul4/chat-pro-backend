@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   UseFilters,
   UseGuards,
@@ -54,6 +55,12 @@ export class AuthController {
   @Post('login/firebase')
   loginOther() {
     return this.authService.loginWih3rdParty();
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Post('connect/firebase/:id')
+  connectFirebaseAuth(@Param('id') id: string) {
+    return this.authService.connectFirebaseAuth(id);
   }
 
   @Post('forgot-password')

@@ -1,4 +1,11 @@
-import { IsEmail, IsString, Length, Matches, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class EmailChangeDto {
   @IsEmail()
@@ -23,5 +30,6 @@ export class ChangePasswordDto {
   newPassword: string;
 
   @IsString()
+  @IsOptional()
   oldPassword: string;
 }

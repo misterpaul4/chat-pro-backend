@@ -315,12 +315,8 @@ export class AuthService {
       where: { id: _user.id },
       select: ['password'],
     });
-    const passwordIsValid = await bcrypt.compare(
-      payload.oldPassword,
-      user.password,
-    );
 
-    if (passwordIsValid) {
+    const addPassword = async () => {
       const salt = await bcrypt.genSalt();
       const hashPassword = await bcrypt.hash(payload.newPassword, salt);
       await this.userService.updateSingleUser(_user.id, {
@@ -329,9 +325,22 @@ export class AuthService {
       });
 
       return { message: 'Password reset successful' };
+    };
+
+    if (user.password) {
+      const passwordIsValid = await bcrypt.compare(
+        payload.oldPassword,
+        user.password,
+      );
+
+      if (passwordIsValid) {
+        return addPassword();
+      }
+
+      throw new BadRequestException('Old password is not correct');
     }
 
-    throw new BadRequestException('Old password is not correct');
+    return addPassword();
   }
 
   async getSelf(id: string) {

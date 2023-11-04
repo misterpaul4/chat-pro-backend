@@ -328,6 +328,10 @@ export class AuthService {
     };
 
     if (user.password) {
+      if (!payload.oldPassword) {
+        throw new BadRequestException('Old password is required');
+      }
+
       const passwordIsValid = await bcrypt.compare(
         payload.oldPassword,
         user.password,

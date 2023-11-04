@@ -327,7 +327,7 @@ export class AuthService {
       return { message: 'Password reset successful' };
     };
 
-    if (user.password) {
+    if (user?.password) {
       if (!payload.oldPassword) {
         throw new BadRequestException('Old password is required');
       }

@@ -93,10 +93,19 @@ export class AuthService {
           email: user.email,
           id: user.id,
         });
-        const { id, firstName, lastName, middleName, email } = user;
+        const { id, firstName, lastName, middleName, email, has3rdPartyAuth } =
+          user;
         return {
           token,
-          user: { id, firstName, lastName, middleName, email },
+          user: {
+            id,
+            firstName,
+            lastName,
+            middleName,
+            email,
+            has3rdPartyAuth,
+            hasPassword: !!user.password,
+          },
         };
       }
 

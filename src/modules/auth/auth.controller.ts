@@ -93,6 +93,6 @@ export class AuthController {
   @Get('get-self')
   @UseGuards(AuthGuard())
   getSelf(@CurrentUser() user: User) {
-    return user;
+    return this.authService.getSelf(user.id);
   }
 }

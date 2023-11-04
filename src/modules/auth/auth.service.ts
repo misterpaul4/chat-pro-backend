@@ -325,6 +325,25 @@ export class AuthService {
     throw new BadRequestException('Old password is not correct');
   }
 
+  async getSelf(id: string) {
+    const user = await this.userService.findOne({
+      where: { id },
+      select: [
+        'firstName',
+        'lastName',
+        'email',
+        'id',
+        'has3rdPartyAuth',
+        'password',
+        'middleName',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
+
+    return { hasPassword: !!user.password, ...user, password: undefined };
+  }
+
   verify(payload: string): IJwtUser {
     return this.jwtService.verify(payload);
   }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import { Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module';
@@ -15,23 +16,23 @@ import { AuthProvidersModule } from './modules/auth-providers/auth-providers.mod
     UsersModule,
     TypeOrmModule.forRootAsync({
       useFactory: () => {
-        let options: TypeOrmModuleOptions = {
+        const options: TypeOrmModuleOptions = {
           type: 'postgres',
           synchronize: true,
           autoLoadEntities: true,
-          url: process.env.DATABASE_URL,
+          host: process.env.DB_HOST,
+          database: process.env.DB_NAME,
+          schema: process.env.DB_SCHEMA,
+          username: process.env.DB_USER,
+          password: process.env.DB_PASSWORD,
+          port: Number(process.env.DB_PORT),
+          ssl: process.env.DB_SSL_CERT
+            ? {
+                ca: process.env.DB_SSL_CERT,
+                rejectUnauthorized: true,
+              }
+            : undefined,
         };
-
-        if (process.env.DEV) {
-          options = {
-            ...options,
-            host: 'localhost',
-            database: 'postgres',
-            schema: 'chat-pro',
-            username: 'postgres',
-            password: null,
-          };
-        }
 
         return options;
       },

@@ -37,3 +37,4 @@ lerna-debug.log*
 .env
 yarn*
 package-lock.json
+ca.pem

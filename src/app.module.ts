@@ -10,6 +10,26 @@ import { UserGatewayModule } from './modules/user-gateway/user-gateway.module';
 import { ConfigModule } from '@nestjs/config';
 import { FirebaseModule } from './modules/firebase/firebase.module';
 import { AuthProvidersModule } from './modules/auth-providers/auth-providers.module';
+import * as path from 'path';
+import * as fs from 'fs';
+
+const getCert = () => {
+  const caCertPath = path.resolve(__dirname, '../ca.pem');
+  let ca = '';
+
+  if (caCertPath) {
+    ca = fs.readFileSync(caCertPath).toString();
+  } else if (process.env.DB_SSL_CERT) {
+    ca = process.env.DB_SSL_CERT;
+  } else {
+    return undefined;
+  }
+
+  return {
+    ca,
+    rejectUnauthorized: true,
+  };
+};
 
 @Module({
   imports: [
@@ -26,12 +46,7 @@ import { AuthProvidersModule } from './modules/auth-providers/auth-providers.mod
           username: process.env.DB_USER,
           password: process.env.DB_PASSWORD,
           port: Number(process.env.DB_PORT),
-          ssl: process.env.DB_SSL_CERT
-            ? {
-                ca: process.env.DB_SSL_CERT,
-                rejectUnauthorized: true,
-              }
-            : undefined,
+          ssl: getCert(),
         };
 
         return options;

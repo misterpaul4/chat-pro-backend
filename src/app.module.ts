@@ -18,6 +18,7 @@ const getCert = () => {
   let ca = '';
 
   if (caCertPath) {
+    console.log('Reading cert from file');
     ca = fs.readFileSync(caCertPath).toString();
   } else if (process.env.DB_SSL_CERT) {
     ca = process.env.DB_SSL_CERT;

@@ -12,6 +12,7 @@ import { FirebaseModule } from './modules/firebase/firebase.module';
 import { AuthProvidersModule } from './modules/auth-providers/auth-providers.module';
 import * as path from 'path';
 import * as fs from 'fs';
+import { CallLogModule } from './modules/call-logs/call-logs.module';
 
 const getCert = () => {
   try {
@@ -73,6 +74,7 @@ const getCert = () => {
     UserGatewayModule,
     FirebaseModule,
     AuthProvidersModule,
+    CallLogModule,
   ],
 })
 export class AppModule {}

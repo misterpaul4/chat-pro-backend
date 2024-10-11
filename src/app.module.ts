@@ -14,22 +14,24 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 const getCert = () => {
-  const caCertPath = path.resolve(__dirname, '../ca.pem');
-  let ca = '';
+  try {
+    const caCertPath = path.resolve(__dirname, '../ca.pem');
+    let ca = '';
 
-  if (caCertPath) {
-    console.log('Reading cert from file');
-    ca = fs.readFileSync(caCertPath).toString();
-  } else if (process.env.DB_SSL_CERT) {
-    ca = process.env.DB_SSL_CERT;
-  } else {
-    return undefined;
-  }
+    if (caCertPath) {
+      console.log('Reading cert from file');
+      ca = fs.readFileSync(caCertPath).toString();
+    } else if (process.env.DB_SSL_CERT) {
+      ca = process.env.DB_SSL_CERT;
+    } else {
+      return undefined;
+    }
 
-  return {
-    ca,
-    rejectUnauthorized: true,
-  };
+    return {
+      ca,
+      rejectUnauthorized: true,
+    };
+  } catch (error) {}
 };
 
 @Module({

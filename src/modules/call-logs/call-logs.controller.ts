@@ -1,10 +1,12 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Crud, CrudController } from '@nestjsx/crud';
 import { generalCrudOptions } from 'src/utils/crud';
 import { CallLog } from './call-logs.entity';
 import { CallLogService } from './call-logs.service';
-import { MakeCallDto } from './call-logs.dto';
+import { EndCallDto, MakeCallDto } from './call-logs.dto';
+import { CurrentUser } from '../auth/current-user-decorator';
+import { User } from '../users/entities/user.entity';
 
 @Crud({
   model: {
@@ -32,8 +34,23 @@ import { MakeCallDto } from './call-logs.dto';
 export class CallLogController implements CrudController<CallLog> {
   constructor(public service: CallLogService) {}
 
-  @Post('make-call')
+  @Post('call/make-call')
   makeCall(@Body() dto: MakeCallDto) {
     return this.service.makeCall(dto);
+  }
+
+  @Post('call/end-call')
+  endCall(@Body() dto: EndCallDto) {
+    return this.service.endCall(dto.receiverId, dto.duration);
+  }
+
+  @Post('call/initialize/:id')
+  initialize(@Param('id') id: string) {
+    return this.service.storePeerId(id);
+  }
+
+  @Get('call/get-peer')
+  getPeer(@CurrentUser() user: User) {
+    return this.service.getPeerId(user.id);
   }
 }

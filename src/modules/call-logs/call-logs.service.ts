@@ -71,10 +71,10 @@ export class CallLogService extends TypeOrmCrudService<CallLog> {
     return peerId;
   }
 
-  async endCall(receiverId: string, duration: number) {
+  async endCall(recipientId: string, duration: number) {
     const user: User = getValue('user');
 
-    const callLog = await this.repo.findOne({ where: { callFromId: user.id, callToId: receiverId }, select: ['id'] })
+    const callLog = await this.repo.findOne({ where: { callFromId: user.id, callToId: recipientId, status: CallLogStatus.Pending }, select: ['id'] })
 
     if (callLog) {
       await this.repo.update(callLog.id, { status: CallLogStatus.Finished, duration })

@@ -5,4 +5,6 @@ export enum CallLogType {
 export enum CallLogStatus {
   Pending = 'Pending',
   Finished = 'Finished',
+  Declined = 'Declined',
+  NotAnswered = 'Not Answered',
 }

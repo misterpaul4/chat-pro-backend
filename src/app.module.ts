@@ -15,6 +15,10 @@ import * as fs from 'fs';
 import { CallLogModule } from './modules/call-logs/call-logs.module';
 
 const getCert = () => {
+  if (process.env.DB_USE_SSL === 'false') {
+    return undefined;
+  }
+
   try {
     const caCertPath = path.resolve(__dirname, '../ca.pem');
     let ca = '';
@@ -32,7 +36,7 @@ const getCert = () => {
       ca,
       rejectUnauthorized: true,
     };
-  } catch (error) {}
+  } catch (error) { }
 };
 
 @Module({
@@ -77,4 +81,4 @@ const getCert = () => {
     CallLogModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

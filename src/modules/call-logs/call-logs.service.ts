@@ -9,14 +9,17 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { getValue } from 'express-ctx';
 import { User } from '../users/entities/user.entity';
-import { CallLogStatus, CallLogType } from './enum';
+import { CallLogStatus } from './enum';
+import { UsersGateway } from '../user-gateway/users.gateway';
+import { SocketEvents } from '../users/enums';
 @Injectable()
 export class CallLogService extends TypeOrmCrudService<CallLog> {
   private readonly logger = new Logger(CallLogService.name);
 
   constructor(
     @InjectRepository(CallLog) public repo: Repository<CallLog>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly userGateway: UsersGateway,
   ) {
     super(repo);
   }
@@ -33,9 +36,11 @@ export class CallLogService extends TypeOrmCrudService<CallLog> {
 
   async storePeerId(peerId: string) {
     const user: User = getValue('user');
-    await this.cacheManager.set(this.getPeerKey(user.id), peerId, { ttl: 60 * 60 * 24 });
+    await this.cacheManager.set(this.getPeerKey(user.id), peerId, {
+      ttl: 60 * 60 * 24,
+    });
 
-    return peerId;
+    return { peerId };
   }
 
   removePeerId() {
@@ -61,23 +66,42 @@ export class CallLogService extends TypeOrmCrudService<CallLog> {
     // save call log
     const user: User = getValue('user');
 
-    await this.repo.save({
+    const instance = this.repo.create({
+      id: dto.sessionId,
       callFromId: user.id,
-      callToId: dto.receiverId
-    }).catch((error) => {
-      this.logger.error({ message: 'Error saving call log', error })
-    })
+      callToId: dto.receiverId,
+    });
 
-    return peerId;
+    const resp: CallLog = await this.repo.save(instance);
+
+    return { peerId, callId: resp.id };
   }
 
-  async endCall(recipientId: string, duration: number) {
+  async endCall(sessionId: string, duration: number, declined?: boolean) {
     const user: User = getValue('user');
 
-    const callLog = await this.repo.findOne({ where: { callFromId: user.id, callToId: recipientId, status: CallLogStatus.Pending }, select: ['id'] })
+    const callLog = await this.repo.findOne({
+      where: {
+        id: sessionId,
+        status: CallLogStatus.Pending,
+      },
+      select: ['id', 'callFromId', 'callToId'],
+    });
 
-    if (callLog) {
-      await this.repo.update(callLog.id, { status: CallLogStatus.Finished, duration })
+    if (
+      callLog &&
+      (user.id === callLog.callToId || user.id === callLog.callFromId)
+    ) {
+      this.userGateway.send(
+        [user.id === callLog.callToId ? callLog.callFromId : callLog.callToId],
+        SocketEvents.END_CALL,
+        declined,
+      );
+
+      this.repo.update(callLog.id, {
+        status: duration ? CallLogStatus.Finished : CallLogStatus.NotAnswered,
+        duration,
+      });
     }
   }
 }

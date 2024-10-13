@@ -41,7 +41,7 @@ export class CallLogController implements CrudController<CallLog> {
 
   @Post('call/end-call')
   endCall(@Body() dto: EndCallDto) {
-    return this.service.endCall(dto.sessionId, dto.duration, dto.declined);
+    return this.service.endCall(dto);
   }
 
   @Post('call/initialize/:id')

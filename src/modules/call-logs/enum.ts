@@ -7,4 +7,5 @@ export enum CallLogStatus {
   Finished = 'Finished',
   Declined = 'Declined',
   NotAnswered = 'Not Answered',
+  Cancelled = 'Cancelled',
 }

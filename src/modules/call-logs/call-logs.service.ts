@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CallLog } from './call-logs.entity';
 import { CrudRequest, GetManyDefaultResponse } from '@nestjsx/crud';
-import { MakeCallDto } from './call-logs.dto';
+import { EndCallDto, MakeCallDto } from './call-logs.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { getValue } from 'express-ctx';
@@ -77,7 +77,7 @@ export class CallLogService extends TypeOrmCrudService<CallLog> {
     return { peerId, callId: resp.id };
   }
 
-  async endCall(sessionId: string, duration: number, declined?: boolean) {
+  async endCall({ sessionId, duration, status }: EndCallDto) {
     const user: User = getValue('user');
 
     const callLog = await this.repo.findOne({
@@ -95,11 +95,11 @@ export class CallLogService extends TypeOrmCrudService<CallLog> {
       this.userGateway.send(
         [user.id === callLog.callToId ? callLog.callFromId : callLog.callToId],
         SocketEvents.END_CALL,
-        declined,
+        status === CallLogStatus.Declined,
       );
 
       this.repo.update(callLog.id, {
-        status: duration ? CallLogStatus.Finished : CallLogStatus.NotAnswered,
+        status: status || CallLogStatus.Finished,
         duration,
       });
     }

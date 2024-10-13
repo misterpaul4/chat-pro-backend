@@ -1,4 +1,5 @@
-import { IsBoolean, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { CallLogStatus } from './enum';
 
 export class MakeCallDto {
   @IsUUID('4')
@@ -15,7 +16,7 @@ export class EndCallDto {
   @IsNumber()
   duration: number;
 
-  @IsBoolean()
+  @IsEnum(CallLogStatus)
   @IsOptional()
-  declined?: boolean;
+  status: CallLogStatus;
 }

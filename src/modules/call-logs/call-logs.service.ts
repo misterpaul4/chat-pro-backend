@@ -27,11 +27,32 @@ export class CallLogService extends TypeOrmCrudService<CallLog> {
   getMany(
     req: CrudRequest,
   ): Promise<CallLog[] | GetManyDefaultResponse<CallLog>> {
-    return super.getMany(req);
+    return super.getMany(this.getRequestGuard(req));
   }
 
   getOne(req: CrudRequest): Promise<CallLog> {
-    return super.getOne(req);
+    return super.getOne(this.getRequestGuard(req));
+  }
+
+  private getRequestGuard(req: CrudRequest) {
+    const user: User = getValue('user');
+
+    req.parsed.search.$and.push({
+      $or: [
+        {
+          callFromId: {
+            $eq: user.id,
+          },
+        },
+        {
+          callToId: {
+            $eq: user.id,
+          },
+        },
+      ],
+    });
+
+    return req;
   }
 
   async storePeerId(peerId: string) {

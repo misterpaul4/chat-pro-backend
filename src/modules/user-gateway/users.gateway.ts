@@ -165,6 +165,18 @@ export class UsersGateway
     return { userId, threadId };
   }
 
+  @SubscribeMessage(SocketEvents.CALL_RINGING)
+  async ringing(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() callerId: string,
+  ) {
+    const userId = this.connectedIds[client.id];
+
+    if (userId) {
+      this.send([callerId], SocketEvents.CALL_RINGING, true);
+    }
+  }
+
   private addUser(clientAppId: string, id: string) {
     if (this.connectedUsers[clientAppId]) {
       this.connectedUsers[clientAppId].push(id);

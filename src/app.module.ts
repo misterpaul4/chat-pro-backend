@@ -12,8 +12,13 @@ import { FirebaseModule } from './modules/firebase/firebase.module';
 import { AuthProvidersModule } from './modules/auth-providers/auth-providers.module';
 import * as path from 'path';
 import * as fs from 'fs';
+import { CallLogModule } from './modules/call-logs/call-logs.module';
 
 const getCert = () => {
+  if (process.env.DB_USE_SSL === 'false') {
+    return undefined;
+  }
+
   try {
     const caCertPath = path.resolve(__dirname, '../ca.pem');
     let ca = '';
@@ -31,7 +36,7 @@ const getCert = () => {
       ca,
       rejectUnauthorized: true,
     };
-  } catch (error) {}
+  } catch (error) { }
 };
 
 @Module({
@@ -73,6 +78,7 @@ const getCert = () => {
     UserGatewayModule,
     FirebaseModule,
     AuthProvidersModule,
+    CallLogModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

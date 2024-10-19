@@ -43,14 +43,4 @@ export class CallLogController implements CrudController<CallLog> {
   endCall(@Body() dto: EndCallDto) {
     return this.service.endCall(dto);
   }
-
-  @Post('call/initialize/:id')
-  initialize(@Param('id') id: string) {
-    return this.service.storePeerId(id);
-  }
-
-  @Get('call/get-peer')
-  getPeer(@CurrentUser() user: User) {
-    return this.service.getPeerId(user.id);
-  }
 }

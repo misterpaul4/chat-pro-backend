@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -55,35 +55,7 @@ export class CallLogService extends TypeOrmCrudService<CallLog> {
     return req;
   }
 
-  async storePeerId(peerId: string) {
-    const user: User = getValue('user');
-    await this.cacheManager.set(this.getPeerKey(user.id), peerId, {
-      ttl: 60 * 60 * 24,
-    });
-
-    return { peerId };
-  }
-
-  removePeerId() {
-    const user: User = getValue('user');
-    this.cacheManager.del(this.getPeerKey(user.id));
-  }
-
-  async getPeerId(userId: string) {
-    return this.cacheManager.get(this.getPeerKey(userId));
-  }
-
-  private getPeerKey(userId: string) {
-    return `peer-${userId}`;
-  }
-
   async makeCall(dto: MakeCallDto) {
-    const peerId = await this.getPeerId(dto.receiverId);
-
-    if (!peerId) {
-      throw new NotFoundException('Peer not found');
-    }
-
     // save call log
     const user: User = getValue('user');
 
@@ -95,7 +67,7 @@ export class CallLogService extends TypeOrmCrudService<CallLog> {
 
     const resp: CallLog = await this.repo.save(instance);
 
-    return { peerId, callId: resp.id };
+    return { callId: resp.id };
   }
 
   async endCall({ sessionId, duration, status }: EndCallDto) {

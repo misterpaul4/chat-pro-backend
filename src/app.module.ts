@@ -35,7 +35,7 @@ const getCert = () => {
 
     return {
       ca,
-      rejectUnauthorized: true,
+      rejectUnauthorized: false,
     };
   } catch (error) {}
 };

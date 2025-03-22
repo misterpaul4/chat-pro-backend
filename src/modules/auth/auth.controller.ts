@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   UseFilters,
   UseGuards,
@@ -25,6 +26,8 @@ import {
   EmailChangeDto,
   EmailChangeRequestDto,
 } from './dto/index.dto';
+import { FirebaseAuthGuard } from '../firebase/auth/auth-guard';
+import { FirebaseAuthMetadata } from 'src/lib/decorators/firebase-auth.decorator';
 
 @Controller('auth')
 @UseFilters(HttpExceptionFilter)
@@ -36,9 +39,28 @@ export class AuthController {
     return this.authService.createUser(body);
   }
 
+  @UseGuards(FirebaseAuthGuard)
+  @Post('signup/firebase')
+  signupOther() {
+    return this.authService.createUserWith3rdParty();
+  }
+
   @Post('login')
   login(@Body() body: LoginDto) {
     return this.authService.login(body);
+  }
+
+  @FirebaseAuthMetadata('login')
+  @UseGuards(FirebaseAuthGuard)
+  @Post('login/firebase')
+  loginOther() {
+    return this.authService.loginWih3rdParty();
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Post('connect/firebase/:id')
+  connectFirebaseAuth(@Param('id') id: string) {
+    return this.authService.connectFirebaseAuth(id);
   }
 
   @Post('forgot-password')
@@ -78,6 +100,6 @@ export class AuthController {
   @Get('get-self')
   @UseGuards(AuthGuard())
   getSelf(@CurrentUser() user: User) {
-    return user;
+    return this.authService.getSelf(user.id);
   }
 }

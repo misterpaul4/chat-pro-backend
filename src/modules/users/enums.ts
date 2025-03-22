@@ -9,4 +9,6 @@ export enum SocketEvents {
   TYPING = 'typing',
   ONLINE_STATUS = 'onlineStatus',
   READ_MESSAGE = 'readMessage',
+  END_CALL = 'endCall',
+  CALL_RINGING = 'callRinging',
 }

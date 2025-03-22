@@ -80,12 +80,18 @@ export class UsersGateway
     this.sendOnlineStatus(userId, true);
   }
 
-  handleDisconnect(@ConnectedSocket() client: Socket) {
+  async handleDisconnect(@ConnectedSocket() client: Socket) {
+    const userId = this.connectedIds[client.id];
+    const lastSeen = new Date();
+    // update last seen
+    await this.userSerive.updateSingleUser(userId, { lastSeen });
+
     // send online status
-    this.sendOnlineStatus(this.connectedIds[client.id], false);
+    this.sendOnlineStatus(userId, false, lastSeen.toISOString());
 
     // remove from connected users
     this.removeUser(client.id);
+
     this.logger.log(`Client Disconnected`, {
       connectedUsers: this.connectedUsers,
     });
@@ -159,6 +165,18 @@ export class UsersGateway
     return { userId, threadId };
   }
 
+  @SubscribeMessage(SocketEvents.CALL_RINGING)
+  async ringing(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() callerId: string,
+  ) {
+    const userId = this.connectedIds[client.id];
+
+    if (userId) {
+      this.send([callerId], SocketEvents.CALL_RINGING, true);
+    }
+  }
+
   private addUser(clientAppId: string, id: string) {
     if (this.connectedUsers[clientAppId]) {
       this.connectedUsers[clientAppId].push(id);
@@ -216,16 +234,20 @@ export class UsersGateway
     return contactList.filter((contact) => this.connectedUsers[contact]);
   }
 
-  async sendOnlineStatus(clientAppId: string, isOnline: boolean) {
+  async sendOnlineStatus(
+    clientAppId: string,
+    isOnline: boolean,
+    lastSeen?: string,
+  ) {
     // get thread users
+    const payload = { user: clientAppId, isOnline, lastSeen };
+
     const userContacts = await this.userSerive.getContacts(clientAppId);
     userContacts.forEach((user) => {
       const contactSocketIds = this.connectedUsers[user.contactId] || [];
-      contactSocketIds.forEach((ctSocket) =>
-        this.server
-          .to(ctSocket)
-          .emit(SocketEvents.ONLINE_STATUS, { user: clientAppId, isOnline }),
-      );
+      contactSocketIds.forEach((ctSocket) => {
+        this.server.to(ctSocket).emit(SocketEvents.ONLINE_STATUS, payload);
+      });
     });
   }
 }

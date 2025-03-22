@@ -4,9 +4,10 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { JWT_EXPIRY, JWT_SECRET } from 'src/settings';
 import { JwtStrategy } from './jwt-strategy';
 import { MailModule } from '../mail/mail.module';
+import { AuthProvidersModule } from '../auth-providers/auth-providers.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   controllers: [AuthController],
@@ -15,13 +16,18 @@ import { MailModule } from '../mail/mail.module';
   imports: [
     forwardRef(() => UsersModule),
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: JWT_SECRET,
-      signOptions: {
-        expiresIn: JWT_EXPIRY,
-      },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get('JWT_EXPIRY'),
+        },
+      }),
     }),
     MailModule,
+    AuthProvidersModule,
   ],
 })
 export class AuthModule {}

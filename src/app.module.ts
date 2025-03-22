@@ -23,10 +23,11 @@ const getCert = () => {
     const caCertPath = path.resolve(__dirname, '../ca.pem');
     let ca = '';
 
-    if (caCertPath) {
+    if (caCertPath && fs.existsSync(caCertPath)) {
       console.log('Reading cert from file');
       ca = fs.readFileSync(caCertPath).toString();
     } else if (process.env.DB_SSL_CERT) {
+      console.log('Reading cert from env');
       ca = process.env.DB_SSL_CERT;
     } else {
       return undefined;
@@ -36,7 +37,7 @@ const getCert = () => {
       ca,
       rejectUnauthorized: true,
     };
-  } catch (error) { }
+  } catch (error) {}
 };
 
 @Module({
@@ -81,4 +82,4 @@ const getCert = () => {
     CallLogModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -13,6 +13,7 @@ import { AuthProvidersModule } from './modules/auth-providers/auth-providers.mod
 import * as path from 'path';
 import * as fs from 'fs';
 import { CallLogModule } from './modules/call-logs/call-logs.module';
+import { AppController } from './app.controller';
 
 const getCert = () => {
   if (process.env.DB_USE_SSL === 'false') {
@@ -36,7 +37,7 @@ const getCert = () => {
       ca,
       rejectUnauthorized: true,
     };
-  } catch (error) { }
+  } catch (error) {}
 };
 
 @Module({
@@ -80,5 +81,6 @@ const getCert = () => {
     AuthProvidersModule,
     CallLogModule,
   ],
+  controllers: [AppController],
 })
-export class AppModule { }
+export class AppModule {}

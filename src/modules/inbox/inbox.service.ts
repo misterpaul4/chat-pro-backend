@@ -56,6 +56,62 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
     }
   }
 
+  async starInbox(id: string, userId: string, shouldStar = true) {
+    try {
+      const inbox = await this.inboxRepo.findOne({
+        where: { id },
+        select: ['id', 'starredBy', 'starred'],
+      });
+
+      if (!inbox) {
+        throw new BadRequestException('Inbox message not found');
+      }
+
+      // Convert starredBy string to array for easier manipulation
+      const starredUsers = inbox.starredBy
+        ? inbox.starredBy.split(',').filter(Boolean)
+        : [];
+      const isStarredByUser = starredUsers.includes(userId);
+
+      if (shouldStar === isStarredByUser) {
+        return {
+          starred: isStarredByUser,
+          message: `Message already ${
+            isStarredByUser ? 'starred' : 'unstarred'
+          }`,
+        };
+      }
+
+      if (shouldStar) {
+        starredUsers.push(userId);
+      } else {
+        const index = starredUsers.indexOf(userId);
+        if (index > -1) {
+          starredUsers.splice(index, 1);
+        }
+      }
+
+      // Update the inbox
+      await this.inboxRepo.update(id, {
+        starredBy: starredUsers.join(','),
+        starred: starredUsers.length > 0,
+      });
+
+      return {
+        starred: shouldStar,
+        message: `Message ${shouldStar ? 'starred' : 'unstarred'} successfully`,
+      };
+    } catch (error) {
+      this.logger.error({
+        message: 'Error updating inbox star status',
+        inboxId: id,
+        userId,
+        error,
+      });
+      throw new BadRequestException('Failed to update star status');
+    }
+  }
+
   async getUserInbox(
     req: CrudRequest,
     currentUser: string,

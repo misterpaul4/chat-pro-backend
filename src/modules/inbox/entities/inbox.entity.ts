@@ -16,6 +16,9 @@ export class Inbox extends BaseEntity {
   @IsOptional()
   starred: boolean;
 
+  @Column({ type: 'text', nullable: true })
+  starredBy?: string; // too lazy to create a new table for this
+
   @ManyToOne(() => User)
   sender: User;
 

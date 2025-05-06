@@ -1,4 +1,11 @@
-import { Controller, Get, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Patch,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { InboxService } from './inbox.service';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -55,5 +62,15 @@ export class InboxController implements CrudController<Inbox> {
   @UseInterceptors(CrudRequestInterceptor)
   getUserInbox(@ParsedRequest() req: CrudRequest, @CurrentUser() user: User) {
     return this.service.getUserInbox(req, user.id);
+  }
+
+  @Patch(':id/star')
+  starInbox(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.service.starInbox(id, user.id, true);
+  }
+
+  @Patch(':id/unstar')
+  unstarInbox(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.service.starInbox(id, user.id, false);
   }
 }

@@ -14,6 +14,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { CallLogModule } from './modules/call-logs/call-logs.module';
 import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { User } from './modules/users/entities/user.entity';
 
 const getCert = () => {
   if (process.env.DB_USE_SSL === 'false') {
@@ -80,7 +82,9 @@ const getCert = () => {
     FirebaseModule,
     AuthProvidersModule,
     CallLogModule,
+    TypeOrmModule.forFeature([User]),
   ],
   controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

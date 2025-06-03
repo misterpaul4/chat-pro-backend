@@ -14,16 +14,13 @@ export class AppService {
 
   async getHealthCheck() {
     try {
-      // Try to fetch one user from the database
-      const user = await this.userRepository.findOne({
-        select: ['id'],
-      });
+      await this.userRepository.query('SELECT 1');
 
       return {
         status: 'ok',
         timestamp: new Date().toISOString(),
         message: 'Server is running',
-        databaseStatus: user ? 'connected' : 'disconnected',
+        databaseStatus: 'connected',
       };
     } catch (error) {
       this.logger.error('Health check failed', error);
@@ -32,10 +29,8 @@ export class AppService {
         status: 'error',
         timestamp: new Date().toISOString(),
         message: 'Server is running but database check failed',
-        database: {
-          status: 'error',
-          error: error.message,
-        },
+        databaseStatus: 'error',
+        error: error.message,
       };
     }
   }

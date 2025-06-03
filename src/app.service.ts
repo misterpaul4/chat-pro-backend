@@ -1,20 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './modules/users/entities/user.entity';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class AppService {
   private readonly logger = new Logger(AppService.name);
 
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async getHealthCheck() {
     try {
-      await this.userRepository.query('SELECT 1');
+      await this.dataSource.query('SELECT 1'); // Check database connectivity
 
       return {
         status: 'ok',

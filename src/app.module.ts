@@ -83,7 +83,6 @@ const getCert = () => {
     FirebaseModule,
     AuthProvidersModule,
     CallLogModule,
-    TypeOrmModule.forFeature([User]),
   ],
   controllers: [AppController],
   providers: [AppService],

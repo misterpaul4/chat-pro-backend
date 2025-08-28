@@ -1,0 +1,40 @@
+name: Aiven Weekly Check
+on:
+  schedule:
+    - cron: "0 8 * * 1" # every Monday at 08:00 UTC
+  workflow_dispatch:
+
+jobs:
+  wake-and-ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Aiven CLI
+        run: pipx install aiven-client
+
+      - name: Power on service
+        env:
+          AIVEN_TOKEN: ${{ secrets.AIVEN_TOKEN }}
+        run: |
+          avn --auth-token "$AIVEN_TOKEN" service update "$AIVEN_SERVICE" --power-on || true
+          avn --auth-token "$AIVEN_TOKEN" service wait "$AIVEN_SERVICE"
+
+      - name: Heartbeat query
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm i pg
+      - run: |
+          node - <<'EOF'
+          const { Client } = require('pg');
+          (async () => {
+            const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+            await client.connect();
+            await client.query('SELECT 1');
+            await client.end();
+            console.log("Heartbeat OK");
+          })().catch(err => { console.error(err); process.exit(1); });
+          EOF
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    env:
+      AIVEN_SERVICE: pg-6a45675

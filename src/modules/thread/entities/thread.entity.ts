@@ -9,6 +9,7 @@ import {
   JoinTable,
   ManyToMany,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { ThreadTypeEnum } from '../dto/enum';
 import { getValue } from 'express-ctx';
@@ -32,6 +33,7 @@ export class Thread extends BaseEntityWithCreators {
 
   // thread WITH a code indicates a private chat or a request
   // thread WITHOUT a code indicates a group chat
+  @Index()
   @Column('text', { nullable: true, unique: true })
   code?: string;
 

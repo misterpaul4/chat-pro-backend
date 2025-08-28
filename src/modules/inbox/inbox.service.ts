@@ -2,11 +2,13 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { TypeOrmCrudService } from '@nestjsx/crud-typeorm';
 import { Inbox } from './entities/inbox.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CreateInboxDto } from './dto/create-inbox.dto';
 import { UsersService } from '../users/users.service';
 import { CrudRequest } from '@nestjsx/crud';
 import { User } from '../users/entities/user.entity';
+import { generatePrivateThreadCode } from 'src/utils/string';
+import { Thread } from '../thread/entities/thread.entity';
 
 @Injectable()
 export class InboxService extends TypeOrmCrudService<Inbox> {
@@ -15,6 +17,7 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
   constructor(
     @InjectRepository(Inbox) private inboxRepo: Repository<Inbox>,
     private readonly userService: UsersService,
+    @InjectRepository(Thread) private threadRepo: Repository<Thread>,
   ) {
     super(inboxRepo);
   }
@@ -110,6 +113,55 @@ export class InboxService extends TypeOrmCrudService<Inbox> {
       });
       throw new BadRequestException('Failed to update star status');
     }
+  }
+
+  async forwardInbox(ids: string[], userId: string, threadIds: string[]) {
+    const inboxes = await this.inboxRepo.find({
+      where: { id: In(ids) },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!inboxes.length) {
+      throw new BadRequestException('Inbox message not found');
+    }
+
+    const inboxToSave: Inbox[] = [];
+
+    const dbThreads = await this.threadRepo.find({
+      where: { id: In(threadIds) },
+      relations: ['users'],
+      select: {
+        users: {
+          id: true,
+        },
+        id: true,
+      },
+    });
+
+    const filteredThreads = dbThreads.filter((thread) =>
+      thread.users.some((user) => user.id === userId),
+    );
+
+    filteredThreads.forEach((thread) => {
+      inboxes.forEach((inbox) => {
+        inboxToSave.push({
+          ...inbox,
+          threadId: thread.id,
+          senderId: userId,
+          forwardedFromId: inbox.senderId,
+          replyingTo: undefined,
+          starred: false,
+          starredBy: undefined,
+          id: undefined,
+        });
+      });
+    });
+
+    if (!inboxToSave.length) {
+      return [];
+    }
+
+    return this.inboxRepo.save(inboxToSave);
   }
 
   async getUserInbox(

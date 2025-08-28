@@ -11,4 +11,5 @@ export enum SocketEvents {
   READ_MESSAGE = 'readMessage',
   END_CALL = 'endCall',
   CALL_RINGING = 'callRinging',
+  FORWARD_MESSAGE = 'forwardMessage',
 }

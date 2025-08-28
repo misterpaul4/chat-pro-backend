@@ -120,6 +120,26 @@ export class UsersGateway
     });
   }
 
+  @SubscribeMessage(SocketEvents.FORWARD_MESSAGE)
+  async forwardMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: { ids: string[]; userId: string; threadIds: string[] },
+  ) {
+    const response = await this.gatewayBridgeService.dispatchForwardMessage(
+      body.ids,
+      body.userId,
+      body.threadIds,
+    );
+
+    const socketUserId = this.connectedIds[client.id];
+
+    if (socketUserId) {
+      this.send([socketUserId], SocketEvents.NEW_MESSAGE, response);
+    }
+
+    return response;
+  }
+
   @SubscribeMessage(SocketEvents.NEW_MESSAGE)
   async newMessage(
     @ConnectedSocket() client: Socket,

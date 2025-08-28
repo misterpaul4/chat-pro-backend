@@ -105,4 +105,12 @@ export class UserGatewayBridgeService {
 
     return threadReadCount;
   }
+
+  async dispatchForwardMessage(
+    messageIds: string[],
+    userId: string,
+    threadIds: string[],
+  ) {
+    return this.inboxService.forwardInbox(messageIds, userId, threadIds);
+  }
 }

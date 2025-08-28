@@ -19,8 +19,14 @@ export class Inbox extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   starredBy?: string; // too lazy to create a new table for this
 
+  @Column({ type: 'text', nullable: true })
+  forwardedFromId?: string;
+
   @ManyToOne(() => User)
   sender: User;
+
+  @ManyToOne(() => User)
+  forwardedFrom?: User;
 
   @Column()
   senderId: string;

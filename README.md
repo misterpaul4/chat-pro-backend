@@ -31,7 +31,6 @@ Before you begin, make sure you have the following installed:
    MAIL_CRED_EMAIL='*********'
    MAIL_CRED_APP_PASS='*********'
 
-
 4. Start server
    
       ```bash
